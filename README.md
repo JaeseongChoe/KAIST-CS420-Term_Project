@@ -6,13 +6,13 @@ ARTIDE is A Really Tiny Integrated Delopment Enviroment for the mini-C programmi
 |Week|Description|
 |---|---|
 |week9|Presentation (management plan)|
-|week10|Semantic Clarification|
-|week11|Design Internal data structure and logic|
-|week12|Report (Internal data structure), Lexical and Syntax analyzer|
-|week13|Semantic analyzer and il generator|
-|week14|Interpreter and debugger|
-|week15|Code generation|
-|week16|Final Exam|
+|week10|Design internal data structure|
+|week11|Implement lexical and syntax analyzer|
+|week12|Report (internal data structure), implement semantic analyzer|
+|week13|Implement intermediate code generator|
+|week14|Implement interpreter/debugger and code generator|
+|week15|Final presentation|
+|week16|Final report|
 
 ## mini-C
 
@@ -22,7 +22,7 @@ mini-C specification from TA.
 
 ### Front end
 
-For lexical and syntactic analyzer, we will use Lex and Yacc using library PLY(Python Lex Yacc).
+Lexical and syntactic analyzer of ARTIDE implemented by using [PLY (Python Lex-Yacc)](https://github.com/dabeaz/ply) library.
 
 #### Lexical analyzer
 
