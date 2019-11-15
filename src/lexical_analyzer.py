@@ -9,46 +9,72 @@ sys.path.insert(0, "../lib")
 
 import ply.lex as lex
 
-# Reserved words
-reserved = (
-    'AUTO', 'BREAK', 'CASE', 'CHAR', 'CONST', 'CONTINUE', 'DEFAULT', 'DO', 'DOUBLE',
-    'ELSE', 'ENUM', 'EXTERN', 'FLOAT', 'FOR', 'GOTO', 'IF', 'INT', 'LONG', 'REGISTER',
-    'RETURN', 'SHORT', 'SIGNED', 'SIZEOF', 'STATIC', 'STRUCT', 'SWITCH', 'TYPEDEF',
-    'UNION', 'UNSIGNED', 'VOID', 'VOLATILE', 'WHILE',
+
+# Keywords
+keyowrd = (
+    'AUTO', 'BREAK', 'CASE', 'CHAR', 'CONST', 'CONTINUE', 'DEFAULT', 'DO',
+    'DOUBLE', 'ELSE', 'ENUM', 'EXTERN', 'FLOAT', 'FOR', 'GOTO', 'IF',
+    'INT', 'LONG', 'REGISTER', 'RETURN', 'SHORT', 'SIGNED', 'SIZEOF', 'STATIC',
+    'STRUCT', 'SWITCH', 'TYPEDEF', 'UNION', 'UNSIGNED', 'VOID', 'VOLATILE', 'WHILE'
 )
 
-tokens = reserved + (
-    # Literals (identifier, integer constant, float constant, string constant,
-    # char const)
-    'ID', 'TYPEID', 'ICONST', 'FCONST', 'SCONST', 'CCONST',
+# Constants
+constant = (
+    'FCONST',        # floating-constant
+    'ICONST',        # integer-constant
+    'ECONST',        # enumeration-constant
+    'CCONST'         # character-constant
+)
 
-    # Operators (+,-,*,/,%,|,&,~,^,<<,>>, ||, &&, !, <, <=, >, >=, ==, !=)
-    'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD',
-    'OR', 'AND', 'NOT', 'XOR', 'LSHIFT', 'RSHIFT',
-    'LOR', 'LAND', 'LNOT',
-    'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
+# String Literals
+string_literals = (
+    '"S-CHAR-SEQUENCE"'
+    'L"S-CHAR-SEQUENCE"'
+)
 
-    # Assignment (=, *=, /=, %=, +=, -=, <<=, >>=, &=, ^=, |=)
-    'EQUALS', 'TIMESEQUAL', 'DIVEQUAL', 'MODEQUAL', 'PLUSEQUAL', 'MINUSEQUAL',
-    'LSHIFTEQUAL', 'RSHIFTEQUAL', 'ANDEQUAL', 'XOREQUAL', 'OREQUAL',
+# Operators
+operator = (
+    # Arithmetic operators (+, -, *, /, %, ++, --)
+    'PLUS', 'MINUS', 'ASTERISK', 'DIV', 'MOD',
+    'INCREMENT', 'DECREMENT',
 
-    # Increment/decrement (++,--)
-    'PLUSPLUS', 'MINUSMINUS',
+    # Comparison operators (==, !=, <, >, <=, >=, !, &&, ||)
+    'EQ', 'NE', 'LT', 'GT', 'LE', 'GE',
 
-    # Structure dereference (->)
-    'ARROW',
+    # Logical operators
+    'L_NOT', 'L_AND', 'L_OR',
 
-    # Conditional operator (?)
-    'CONDOP',
+    # Bitwise operators (~, &, |, ^, <<, >>)
+    'B_NOT', 'AMPERSAND', 'B_OR', 'B_XOR', 'B_LSHIFT', 'B_RSHIFT'
 
-    # Delimeters ( ) [ ] { } , . ; :
-    'LPAREN', 'RPAREN',
-    'LBRACKET', 'RBRACKET',
-    'LBRACE', 'RBRACE',
-    'COMMA', 'PERIOD', 'SEMI', 'COLON',
+    # Assignment operators (=, +=, -=, *=, /=, %=, &=, ^=, |=, <<=, >>=)
+    'ASSIGN',
+    'ADD_ASSIGN', 'SUB_ASSIGN', 'MUL_ASSIGN', 'DIV_ASSIGN', 'MOD_ASSIGN',
+    'B_AND_ASSIGN', 'B_XOR_ASSIGN', 'B_OR_ASSIGN',
+    'B_LSHIFT_ASSIGN', 'B_RSHIFT_ASSIGN',
 
-    # Ellipsis (...)
-    'ELLIPSIS',
+    # Member and pointer operators (., ->)
+    'PERIOD', 'ARROW',
+
+    # Other operators (?, :, ,, sizeof)
+    'TERNARY', 'COLON',
+    'COMMA',
+    'SIZEOF'
+)
+
+# Punctuators
+punctuators = (
+    'LBRACKET', 'RBRACKET',    # [, ]
+    'LPAREN', 'RPAREN',        # (, )
+    'LBRACE', 'RBRACE',        # {, }
+    'SEMI_COLON',              # ;
+    'ELLIPSIS'                 # ...
+)
+
+# Tokens
+tokens = keyword + constant + string_literals + operators + punctuators + (
+    'ID', 'TYPEID',
+    'SCONST',
 )
 
 # Completely ignored characters
@@ -122,14 +148,14 @@ t_ELLIPSIS = r'\.\.\.'
 
 # Identifiers and reserved words
 
-reserved_map = {}
-for r in reserved:
-    reserved_map[r.lower()] = r
+keyowrd_map = {}
+for k in keyword:
+    keyword_map[k.lower()] = k
 
 
 def t_ID(t):
     r'[A-Za-z_][\w_]*'
-    t.type = reserved_map.get(t.value, "ID")
+    t.type = keyword_map.get(t.value, "ID")
     return t
 
 # Integer literal
