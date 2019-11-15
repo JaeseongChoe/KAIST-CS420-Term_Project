@@ -1,81 +1,26 @@
-import dataclasses
-import typing
-
-
-NodeType = typing.NewType('NodeType', object)
-
-
-@dataclass(frozen=False)
 class Node:
-    value: StringType
+    def __init__(self, data = None, child_list = []):
+        self.data = data
+        self.children = []
+        for child in child_list:
+            self.children.append(child)
 
+    def set_data(self, data):
+        self.data = data
 
-@dataclass(frozen=False)
-class UnaOp(Node):
-    operator: NodeType
-    operand: NodeType
+    def get_data(self):
+        return self.data
 
+    def add_child(self, child):
+        self.children.append(child)
 
-@dataclass(frozen=False)
-class BinOp(Node):
-    operator: NodeType
-    left: NodeType
-    right: NodeType
+    def remove_child(self, child):
+        self.children.remove(child)
 
+    def add_children(self, child_list):
+        for child in child_list:
+            self.add_child(child)
 
-@dataclass(frozen=False)
-class IfThenElse(Node):
-    condition: NodeType
-    then_body: NodeType
-    else_body: NodeType
-
-
-@dataclass(frozen=False)
-class WhileLoop(Node):
-    condition: NodeType
-    body: NodeType
-
-
-@dataclass(frozen=False)
-class ForLoop(Node):
-    initialization: NodeType
-    condition: NodeType
-    after_thought: NodeType
-    body: NodeType
-
-
-@dataclass(frozen=False)
-class FunDef(Node):
-    fun_name: str
-    params: List[(Type, StringType)] = field(default_factory = list)
-    body: NodeType
-
-
-@dataclass(frozen=False)
-class FunCall(Node):
-    fun_name: StringType
-    args: List[NodeType] = field(default_factory = list)
-
-
-@dataclass(frozen=False)
-class ArrayAssign(Node):
-    id: NodeType
-    index: NodeType
-    value: NodeType
-
-
-@dataclass(frozen=False)
-class ArrayAccess(Node):
-    id: NodeType
-    index: NodeType
-
-
-@dataclass(frozen=False)
-class Block(Node):
-    statements: List[NodeType] = field(default_factory = list)
-
-
-@dataclass(frozen=False)
-class Printf(Node):
-    format_string: NodeType
-    args: List[NodeType] = field(default_factory = list)
+    def remove_children(self, child_list):
+        for child in child_list:
+            self.remove_child(child)
