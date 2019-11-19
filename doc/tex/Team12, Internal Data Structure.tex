@@ -1,0 +1,57 @@
+\documentclass{article}
+
+\usepackage[a4paper, margin = 1in]{geometry}
+\usepackage{minted}
+
+\title
+{
+	CS420 Compiler Design\\
+	Report for the Term Project: Internal Data Structure\\
+	${}$\\
+	Team 12
+}
+
+\author
+{
+	Jaeseong Choe\\
+	Undergraduate\\
+	Department of Physics, KAIST
+	\and
+	Kee Tack Kim\\
+	Undergraduate\\
+	Department of Mathematics, KAIST
+	\and
+	Taeyoung Kim\\
+	Undergraduate\\
+	School of Computing, KAIST
+	\and
+	Youngrae Kim\\
+	Undergraduate\\
+	School of Computing, KAIST
+	\and
+	Seokbin Lee\\
+	Undergraduate\\
+	School of Computing, KAIST
+}
+
+\begin{document}
+	\maketitle
+	
+	\section{Token}
+	
+\begin{minted}{python}
+	# Token class.  This class is used to represent the tokens produced.
+	class LexToken(object):
+		def __str__(self):
+			return 'LexToken(%s,%r,%d,%d)' % (self.type, self.value, self.lineno, self.lexpos)
+		
+		def __repr__(self):
+			return str(self)
+	\end{minted}
+	
+	\section{Abstract syntax tree}
+	
+	\section{Symbol table}
+	
+	\section{Intermediate code}
+\end{document}
