@@ -1,7 +1,22 @@
+% ! TeX program = pdflatex
+
 \documentclass{article}
 
 \usepackage[a4paper, margin = 1in]{geometry}
-\usepackage{minted}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{
+commentstyle=\color{mygreen},
+keywordstyle=\color{blue},
+stringstyle=\color{mymauve},
+identifierstyle=\color{cyan}
+}
+
+\newcommand{\code}[1]{\texttt{#1}}
 
 \title
 {
@@ -36,22 +51,90 @@
 
 \begin{document}
 	\maketitle
-	
+
 	\section{Token}
-	
-\begin{minted}{python}
-	# Token class.  This class is used to represent the tokens produced.
-	class LexToken(object):
-		def __str__(self):
-			return 'LexToken(%s,%r,%d,%d)' % (self.type, self.value, self.lineno, self.lexpos)
+
+	The PLY library consist of two \code{.py} files. \code{lex.py} for the lexical analyzer generator and \code{yacc.py} for syntax analyzer generator, respectively. In the \code{lex.py} file, there is special class for tokenization called \code{LexToken}. The \code{LexToken} class has four attributes:
+
+	\begin{itemize}
+		\item \code{self.type}
 		
-		def __repr__(self):
-			return str(self)
-	\end{minted}
-	
+		\code{self.type} field represent the type of each token. For example, lexime \code{1234} will has the type \code{ICONST} after it tokenized.
+
+		\item \code{self.value}
+		
+		\code{self.value} field represent the original string of each token. For example, lexime \code{1234} will has the vlaue '1234' after it tokenized.
+
+		\item \code{self.linno}
+		
+		\code{self.lino} field represent the line number of each lexime in the source file.
+
+		\item \code{self.lexpos}
+		
+		\code{self.lexpos} field represent the position of first charactor of eahc lexime relative to the start of source file.
+
+	\end{itemize}
+
+	\begin{lstlisting}[language=Python]
+# Token class.  This class is used to represent the tokens produced.
+class LexToken(object):
+    def __str__(self):
+        return 'LexToken(%s,%r,%d,%d)'
+          % (self.type, self.value, self.lineno, self.lexpos)
+
+    def __repr__(self):
+        return str(self)
+	\end{lstlisting}
+
+
 	\section{Abstract syntax tree}
-	
+
+	In order to implement abstract syntax tree (AST), we implement the class \code{Node}. The \code{Node} class has two attribute:
+
+	\begin{itemize}
+		\item \code{self.data}
+		
+		\code{self.data} is an identifier to represent general data contained in node. The type of data can be anything. The beauty of Python!
+
+		\item \code{self.children}
+		
+		\code{self.children} is a list which contains the children of node.
+
+	\end{itemize}
+
+	\begin{lstlisting}[language=python]
+# 
+	\end{lstlisting}
+
+
 	\section{Symbol table}
-	
+
+
+
+	\begin{lstlisting}[language=python]
+# Symbol table entry class. This class is used
+# to represent the entries of symbol table.
+class SymTabEntry:
+    def __init__(self, id: str, type):
+        self.id = id
+        self.type = type
+		self.assigned = False
+
+# Symbol table class. This class represent the symbol table.
+class SymTabBlock:
+    def __init__(self, prev, next = None):
+        self.prev = prev
+		if next is None:
+			self.next = []
+		self.table = {}
+	\end{lstlisting}
+
+
 	\section{Intermediate code}
+
+	\begin{lstlisting}[language=python]
+# ***************
+	\end{lstlisting}
+
+
 \end{document}
