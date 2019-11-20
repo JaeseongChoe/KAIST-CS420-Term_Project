@@ -1,31 +1,31 @@
 class SymTabEntry:
-    def __init__(self, id, type, scope):
+    def __init__(self, id, type, assigned=False):
         self.id = id
         self.type = type
-        self.scope = scope
+        self.assigned = assigned
 
 
 class SymTabBlock:
-    def __init__(self, prev, next = None):
+    def __init__(self, prev=None, nexts=[]):
         self.prev = prev
-        self.next = next
+        self.nexts = nexts
         self.table = {}
 
     def insert(self, symbol):
-        if symbol.id in self.table.keys():
+        if symbol.id in self.table:
             # Need to implement (maybe try-except?)
             pass
         else:
             self.table[symbol.id] = symbol
 
     def remove(self, id):
-        if not id in self.table.keys():
+        if id not in self.table.keys():
             # Need to implement (maybe try-except?)
             pass
         else:
             self.table.pop(id)
 
-    def get(slef, id):
+    def get(self, id):
         try:
             return self.table[id]
         except KeyError:
@@ -39,10 +39,14 @@ class SymTab:
         self.cur = global_table
 
     def insert_block_table(self, block_table):
-        self.cur.next = block_table
+        self.cur.nexts.append(block_table)
         block_table.prev = self.cur
         self.cur = block_table
 
+    def remove_block_table(self):
+        self.cur.prev.pop(self.cur)
+        self.cur = self.cur.prev
+        
     def insert(self, symbol):
         self.cur.insert(symbol)
 
