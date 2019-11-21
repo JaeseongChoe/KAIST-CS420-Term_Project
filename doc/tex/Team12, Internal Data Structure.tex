@@ -7,6 +7,8 @@
 \usepackage{color}
 \usepackage{graphicx}
 \usepackage{tikz}
+\usepackage[maxbibnames=10]{biblatex} 
+\addbibresource{references.bib}
 
 \linespread{1.2}
 
@@ -136,7 +138,7 @@
 	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=0.55\textwidth]{"../img/symbol table hierarchy".png}
-		\caption{The hierarchy of symbol table. \cite{?}}
+		\caption{The hierarchy of symbol table. \cite{Aho:2006:CPT:1177220}}
 		\label{fig: hierarchy of symbol table}
 	\end{figure}
 	
@@ -244,4 +246,6 @@
 	We uses the three-address code format for the our internal intermediate code, i.e., our intermediate code is the form of
 	\[ \code{x = y op z}. \]
 	The detailed specification of intermediate code for each statement does not defined yet. However, we try to specifying it in the next week.
+	
+	\printbibliography
 \end{document}
