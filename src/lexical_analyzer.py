@@ -133,16 +133,27 @@ def t_ID(t):
     return t
 
 # Integer literal
-t_ICONST = r'\d+([uU]|[lL]|[uU][lL]|[lL][uU])?'
+def t_ICONST(t):
+    r'\d+([uU]|[lL]|[uU][lL]|[lL][uU])?'
+    t.value = ("ICONST", (t.lexer.lineno, t.lexer.lineno), t.value)
+    return t
 
 # Floating literal
-t_FCONST = r'((\d+)(\.\d+)(e(\+|-)?(\d+))? | (\d+)e(\+|-)?(\d+))([lL]|[fF])?'
+def t_FCONST(t):
+    r'((\d+)(\.\d+)(e(\+|-)?(\d+))? | (\d+)e(\+|-)?(\d+))([lL]|[fF])?'
+    t.value = ("FCONST", (t.lexer.lineno, t.lexer.lineno), t.value)
+    return t
 
 # String literal
-t_SCONST = r'\"([^\\\n]|(\\.))*?\"'
+def t_SCONST(t):
+    r'\"([^\\\n]|(\\.))*?\"'
+    t.value = ("SCONST", (t.lexer.lineno, t.lexer.lineno), t.value)
+    return t
 
 # Character constant 'c' or L'c'
-t_CCONST = r'(L)?\'([^\\\n]|(\\.))*?\''
+def t_CCONST(t):
+    r'(L)?\'([^\\\n]|(\\.))*?\''
+    t.value = ("CCONST", (t.lexer.lineno, t.lexer.lineno), t.value)
 
 # Comments
 
