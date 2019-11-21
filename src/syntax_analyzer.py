@@ -7,6 +7,7 @@
 import sys
 import lexical_analyzer
 import ply.yacc as yacc
+from node import Node
 
 # Get the token map
 tokens = lexical_analyzer.tokens
@@ -17,6 +18,8 @@ def to_node(node_list):
     for item in node_list:
         if isinstance(item, Node):
             result.append(item)
+        elif isinstance(item, str):
+            result.append(Node(item, (None, None), None))
         else:
             result.append(Node((item[0], (item[2], item[2]), item[1])))
     return result
@@ -1234,7 +1237,9 @@ def p_error(t):
 import profile
 # Build the grammar
 
-yacc.yacc()
+#yacc.yacc()
 #yacc.yacc(method='LALR',write_tables=False,debug=False)
+
+parser = yacc.yacc()
 
 #profile.run("yacc.yacc(method='LALR')")
