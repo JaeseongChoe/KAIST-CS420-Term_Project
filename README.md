@@ -22,15 +22,15 @@ mini-C specification from TA.
 
 ### Front end
 
-The front end of the mini-C compiler consist of three different parts, namely, lexical, syntax, and semantic analyzer. The lexical and syntax analyzer implemented by using [PLY (Python Lex-Yacc)](https://github.com/dabeaz/ply) library. The PLY libary has two modules `Lex` and `Yacc`.
+The front end of the mini-C compiler consist of three different parts, namely, lexical, syntax, and semantic analyzer. The lexical and syntax analyzer implemented by using [PLY (Python Lex-Yacc)](https://github.com/dabeaz/ply) library (PLY-3.11). The PLY libary has two modules Lex and Yacc.
 
 #### Lexical analyzer
 
-The lexical analyzer uses `Lex` module of the PLY library. Token specification of mini-C can be found in `lexical_analyzer.py`. It can covers all the tokens of ANSI C (C89/C90).
+The lexical analyzer uses Lex module of the PLY library. Token specification of mini-C can be found in [lexical_analyzer.py](https://github.com/JaeseongChoe/KAIST-CS420-Term_Project/tree/master/src/lexical_analyzer.py). It can covers all the tokens of ANSI C (C89/C90).
 
 #### Syntax analyzer
 
-The syntax anlayzer uses `Yacc` module of the PLY library. Context free grammer within BNF can be found in `syntax_analyzer.py`.
+The syntax anlayzer uses Yacc module of the PLY library. Context free grammer within BNF can be found in [syntax_analyzer.py](https://github.com/JaeseongChoe/KAIST-CS420-Term_Project/tree/master/src/syntax_analyzer.py). The parsing mechnism of generated syntax analyzer is LALR(1).
 
 #### Semantic analyzer
 
