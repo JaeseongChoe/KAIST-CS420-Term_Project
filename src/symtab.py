@@ -33,9 +33,12 @@ class SymTabEntry:
 
 
 class SymTabBlock:
-    def __init__(self, prev=None, nexts=[]):
+    def __init__(self, prev=None, nexts=None, scope=(None, None)):
         self.prev = prev
-        self.nexts = nexts
+        if nexts is None:
+            self.nexts = []
+        else:
+            self.nexts = nexts
         self.table = {}
 
     def insert(self, symbol):
