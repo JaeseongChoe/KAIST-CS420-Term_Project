@@ -14,7 +14,7 @@ import node
 tokens = lexical_analyzer.tokens
 
 # Starting grammar rule
-start = 'expression'
+start = 'translation_unit'
 
 
 # constant
@@ -24,7 +24,7 @@ def p_constant(p):
                  | FCONST
                  | CCONST
     '''
-    pass
+    p[0] = node.Node(p.slice[1].type, p[1], p.lineno(1))
 
 
 # primary-expression
@@ -35,7 +35,13 @@ def p_primary_expression(p):
                            | STR_LITER
                            | LPAREN expression RPAREN
     '''
-    pass
+    if len(p) == 2:
+        if isinstance(p[1], node.Node):
+            p[0] = p[1]
+        elif p[1] != '(' and p[3] != ')':
+            p[0] = node.Node(p.slice[1].type, p[1], p.lineno(1))
+    else:
+        p[0] = p[2]
 
 
 # postfix-expression
@@ -49,7 +55,24 @@ def p_postfix_expression(p):
                            | postfix_expression INCREMENT
                            | postfix_expression DECREMENT
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 5:
+        if p[2] == '[':
+            type = 'ARRAY'
+        else:
+            type = 'FUNCTION'
+        id = node.Node(type, p[1], p.lineno(1))
+        index = node.Node('INDEX', P[3].value, p.lineno(3))
+        p[0] = node.Node(type, None, p.lineno(2), [id, index])
+    elif len(p) == 4:
+        # Todo
+        raise Error
+    elif len(p) == 3:
+        if p[2] == '++':
+            p[0] = node.Node('POSTINC', p[1].value, p.lineno(2))
+        else:
+            p[0] = node.Node('POSTDEC', p[1].value, p.lineno(2))
 
 
 # argument-expression-list:
@@ -58,7 +81,10 @@ def p_argument_expression_list(p):
         argument_expression_list : assignment_expression
                                  | argument_expression_list COMMA assignment_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('ARG_EXPR_LIST', [p[1], p[3]])
 
 
 # unary-expression
@@ -71,7 +97,19 @@ def p_unary_expression(p):
                          | SIZEOF unary_expression
                          | SIZEOF LPAREN type_name RPAREN
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        if p[1] == '++':
+            p[0] = node.Node('PREINC', None, p.lineno(1), [p[2]])
+        elif p[1] == '--':
+            p[0] = node.Node('PREDEC', None, p.lineno(1), [p[2]])
+        elif p[1] != 'sizeof':
+            p[0] = node.Node('UNARY', None, p.lineno(1), [p[1], p[2]])
+        else:
+            p[0] = node.Node('SIZEOF', None, p.lineno(1), [p[2]])
+    else:
+        p[0] = node.Node('SIZEOF', None, p.lineno(1), [p[3]])
 
 
 # unary-operator
@@ -84,7 +122,7 @@ def p_unary_operator(p):
                        | B_NOT
                        | L_NOT
     '''
-    pass
+    p[0] = node.Node('UNA_OP', p[1], p.lineno(1))
 
 
 # cast-expression
@@ -93,7 +131,10 @@ def p_cast_expression(p):
         cast_expression : unary_expression
                         | LPAREN type_name RPAREN cast_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('CAST', None, p.lineno(2), [p[2], p[4]])
 
 
 # multiplicative-expression
@@ -104,7 +145,10 @@ def p_multiplicative_expression(p):
                                   | multiplicative_expression DIV cast_expression
                                   | multiplicative_expression MOD cast_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('MUL_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # additive-expression
@@ -114,7 +158,10 @@ def p_additive_expression(p):
                             | additive_expression PLUS multiplicative_expression
                             | additive_expression MINUS multiplicative_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('ADD_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # shift-expression
@@ -124,7 +171,10 @@ def p_shift_expression(p):
                          | shift_expression B_LSHIFT additive_expression
                          | shift_expression B_RSHIFT additive_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('SHIFT_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # relational-expression
@@ -136,7 +186,10 @@ def p_relational_expression(p):
                               | relational_expression LE shift_expression
                               | relational_expression GE shift_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('REL_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # equality-expression
@@ -146,7 +199,10 @@ def p_equality_expression(p):
                             | equality_expression EQ relational_expression
                             | equality_expression NE relational_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('EQ_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # AND-expression
@@ -155,7 +211,10 @@ def p_AND_expression(p):
         AND_expression : equality_expression
                        | AND_expression AMPERSAND equality_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('AND_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # exclusive-OR-expression
@@ -164,7 +223,10 @@ def p_exclusive_OR_expression(p):
         exclusive_OR_expression : AND_expression
                                 | exclusive_OR_expression B_XOR AND_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('XOR_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # inclusive-OR-expression
@@ -173,7 +235,10 @@ def p_inclusive_OR_expression(p):
         inclusive_OR_expression : exclusive_OR_expression
                                 | inclusive_OR_expression B_OR exclusive_OR_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('OR_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # logical-and-expression
@@ -182,7 +247,10 @@ def p_logical_AND_expression(p):
         logical_AND_expression : inclusive_OR_expression
                                | logical_AND_expression L_AND inclusive_OR_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('L_AND_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # logical-or-expression
@@ -191,7 +259,10 @@ def p_logical_OR_expression(p):
         logical_OR_expression : logical_AND_expression
                               | logical_OR_expression L_OR logical_AND_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('L_OR_EXPR', p[2], p.lineno(2), [p[1], p[3]])
 
 
 # conditional-expression
@@ -200,7 +271,10 @@ def p_conditional_expression(p):
         conditional_expression : logical_OR_expression
                                | logical_OR_expression TERNARY expression COLON conditional_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('TERNARY', p[2], p.lineno(2), [p[1], p[3], p[5]])
 
 
 # assignment-expression
@@ -209,7 +283,10 @@ def p_assignment_expression(p):
         assignment_expression : conditional_expression
                               | unary_expression assignment_operator assignment_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('ASSIGN_EXPR', p[2].value, p[2].lineno, [p[1], p[3]])
 
 
 # assignment-operator
@@ -227,7 +304,7 @@ def p_assignment_operator(p):
                             | B_XOR_ASSIGN
                             | B_OR_ASSIGN
     '''
-    pass
+    p[0] = node.Node('ASSIGN_OP', p[1], p.lineno(1))
 
 
 # expression
@@ -236,13 +313,16 @@ def p_expression(p):
         expression : assignment_expression
                    | expression COMMA assignment_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('EXPR', None, p.lineno(2), [p[1], p[3]])
 
 
 # constant-expression
 def p_constant_expression(p):
     'constant_expression : conditional_expression'
-    pass
+    p[0] = p[1]
 
 
 # declaration
@@ -696,6 +776,7 @@ def p_expression_opt(p):
 
 def p_error(p):
     print("Whoa. We're hosed")
+    print("lineno: %d, pos: %d" % (p.lineno, p.lexpos))
 
 
 import profile
