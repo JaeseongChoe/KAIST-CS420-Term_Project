@@ -1,1108 +1,717 @@
 # -----------------------------------------------------------------------------
 # syntax_analyzer.py
 #
-# A syntax analyzer for ANSI C.  Based on the grammar in K&R, 2nd Ed.
+# A syntax analyzer for ANSI C (C89 / C90). Based on ANSI/ISO 9899-1990
 # -----------------------------------------------------------------------------
 
 import sys
 import lexical_analyzer
 import ply.yacc as yacc
+import node
+
 
 # Get the token map
 tokens = lexical_analyzer.tokens
 
-# translation-unit:
+# Starting grammar rule
+start = 'expression'
 
 
-def p_translation_unit_1(t):
-    'translation_unit : external_declaration'
-    pass
-
-
-def p_translation_unit_2(t):
-    'translation_unit : translation_unit external_declaration'
-    pass
-
-# external-declaration:
-
-
-def p_external_declaration_1(t):
-    'external_declaration : function_definition'
-    pass
-
-
-def p_external_declaration_2(t):
-    'external_declaration : declaration'
-    pass
-
-# function-definition:
-
-
-def p_function_definition_1(t):
-    'function_definition : declaration_specifiers declarator declaration_list compound_statement'
-    pass
-
-
-def p_function_definition_2(t):
-    'function_definition : declarator declaration_list compound_statement'
-    pass
-
-
-def p_function_definition_3(t):
-    'function_definition : declarator compound_statement'
-    pass
-
-
-def p_function_definition_4(t):
-    'function_definition : declaration_specifiers declarator compound_statement'
-    pass
-
-# declaration:
-
-
-def p_declaration_1(t):
-    'declaration : declaration_specifiers init_declarator_list SEMI'
-    pass
-
-
-def p_declaration_2(t):
-    'declaration : declaration_specifiers SEMI'
-    pass
-
-# declaration-list:
-
-
-def p_declaration_list_1(t):
-    'declaration_list : declaration'
-    pass
-
-
-def p_declaration_list_2(t):
-    'declaration_list : declaration_list declaration '
-    pass
-
-# declaration-specifiers
-
-
-def p_declaration_specifiers_1(t):
-    'declaration_specifiers : storage_class_specifier declaration_specifiers'
-    pass
-
-
-def p_declaration_specifiers_2(t):
-    'declaration_specifiers : type_specifier declaration_specifiers'
-    pass
-
-
-def p_declaration_specifiers_3(t):
-    'declaration_specifiers : type_qualifier declaration_specifiers'
-    pass
-
-
-def p_declaration_specifiers_4(t):
-    'declaration_specifiers : storage_class_specifier'
-    pass
-
-
-def p_declaration_specifiers_5(t):
-    'declaration_specifiers : type_specifier'
-    pass
-
-
-def p_declaration_specifiers_6(t):
-    'declaration_specifiers : type_qualifier'
-    pass
-
-# storage-class-specifier
-
-
-def p_storage_class_specifier(t):
-    '''storage_class_specifier : AUTO
-                               | REGISTER
-                               | STATIC
-                               | EXTERN
-                               | TYPEDEF
-                               '''
-    pass
-
-# type-specifier:
-
-
-def p_type_specifier(t):
-    '''type_specifier : VOID
-                      | CHAR
-                      | SHORT
-                      | INT
-                      | LONG
-                      | FLOAT
-                      | DOUBLE
-                      | SIGNED
-                      | UNSIGNED
-                      | struct_or_union_specifier
-                      | enum_specifier
-                      | TYPEID
-                      '''
-    pass
-
-# type-qualifier:
-
-
-def p_type_qualifier(t):
-    '''type_qualifier : CONST
-                      | VOLATILE'''
-    pass
-
-# struct-or-union-specifier
-
-
-def p_struct_or_union_specifier_1(t):
-    'struct_or_union_specifier : struct_or_union ID LBRACE struct_declaration_list RBRACE'
-    pass
-
-
-def p_struct_or_union_specifier_2(t):
-    'struct_or_union_specifier : struct_or_union LBRACE struct_declaration_list RBRACE'
-    pass
-
-
-def p_struct_or_union_specifier_3(t):
-    'struct_or_union_specifier : struct_or_union ID'
-    pass
-
-# struct-or-union:
-
-
-def p_struct_or_union(t):
-    '''struct_or_union : STRUCT
-                       | UNION
-                       '''
-    pass
-
-# struct-declaration-list:
-
-
-def p_struct_declaration_list_1(t):
-    'struct_declaration_list : struct_declaration'
-    pass
-
-
-def p_struct_declaration_list_2(t):
-    'struct_declaration_list : struct_declaration_list struct_declaration'
-    pass
-
-# init-declarator-list:
-
-
-def p_init_declarator_list_1(t):
-    'init_declarator_list : init_declarator'
-    pass
-
-
-def p_init_declarator_list_2(t):
-    'init_declarator_list : init_declarator_list COMMA init_declarator'
-    pass
-
-# init-declarator
-
-
-def p_init_declarator_1(t):
-    'init_declarator : declarator'
-    pass
-
-
-def p_init_declarator_2(t):
-    'init_declarator : declarator EQUALS initializer'
-    pass
-
-# struct-declaration:
-
-
-def p_struct_declaration(t):
-    'struct_declaration : specifier_qualifier_list struct_declarator_list SEMI'
-    pass
-
-# specifier-qualifier-list:
-
-
-def p_specifier_qualifier_list_1(t):
-    'specifier_qualifier_list : type_specifier specifier_qualifier_list'
-    pass
-
-
-def p_specifier_qualifier_list_2(t):
-    'specifier_qualifier_list : type_specifier'
-    pass
-
-
-def p_specifier_qualifier_list_3(t):
-    'specifier_qualifier_list : type_qualifier specifier_qualifier_list'
-    pass
-
-
-def p_specifier_qualifier_list_4(t):
-    'specifier_qualifier_list : type_qualifier'
-    pass
-
-# struct-declarator-list:
-
-
-def p_struct_declarator_list_1(t):
-    'struct_declarator_list : struct_declarator'
-    pass
-
-
-def p_struct_declarator_list_2(t):
-    'struct_declarator_list : struct_declarator_list COMMA struct_declarator'
-    pass
-
-# struct-declarator:
-
-
-def p_struct_declarator_1(t):
-    'struct_declarator : declarator'
-    pass
-
-
-def p_struct_declarator_2(t):
-    'struct_declarator : declarator COLON constant_expression'
-    pass
-
-
-def p_struct_declarator_3(t):
-    'struct_declarator : COLON constant_expression'
-    pass
-
-# enum-specifier:
-
-
-def p_enum_specifier_1(t):
-    'enum_specifier : ENUM ID LBRACE enumerator_list RBRACE'
-    pass
-
-
-def p_enum_specifier_2(t):
-    'enum_specifier : ENUM LBRACE enumerator_list RBRACE'
-    pass
-
-
-def p_enum_specifier_3(t):
-    'enum_specifier : ENUM ID'
-    pass
-
-# enumerator_list:
-
-
-def p_enumerator_list_1(t):
-    'enumerator_list : enumerator'
-    pass
-
-
-def p_enumerator_list_2(t):
-    'enumerator_list : enumerator_list COMMA enumerator'
-    pass
-
-# enumerator:
-
-
-def p_enumerator_1(t):
-    'enumerator : ID'
-    pass
-
-
-def p_enumerator_2(t):
-    'enumerator : ID EQUALS constant_expression'
-    pass
-
-# declarator:
-
-
-def p_declarator_1(t):
-    'declarator : pointer direct_declarator'
-    pass
-
-
-def p_declarator_2(t):
-    'declarator : direct_declarator'
-    pass
-
-# direct-declarator:
-
-
-def p_direct_declarator_1(t):
-    'direct_declarator : ID'
-    pass
-
-
-def p_direct_declarator_2(t):
-    'direct_declarator : LPAREN declarator RPAREN'
-    pass
-
-
-def p_direct_declarator_3(t):
-    'direct_declarator : direct_declarator LBRACKET constant_expression_opt RBRACKET'
-    pass
-
-
-def p_direct_declarator_4(t):
-    'direct_declarator : direct_declarator LPAREN parameter_type_list RPAREN '
-    pass
-
-
-def p_direct_declarator_5(t):
-    'direct_declarator : direct_declarator LPAREN identifier_list RPAREN '
-    pass
-
-
-def p_direct_declarator_6(t):
-    'direct_declarator : direct_declarator LPAREN RPAREN '
-    pass
-
-# pointer:
-
-
-def p_pointer_1(t):
-    'pointer : TIMES type_qualifier_list'
-    pass
-
-
-def p_pointer_2(t):
-    'pointer : TIMES'
-    pass
-
-
-def p_pointer_3(t):
-    'pointer : TIMES type_qualifier_list pointer'
-    pass
-
-
-def p_pointer_4(t):
-    'pointer : TIMES pointer'
-    pass
-
-# type-qualifier-list:
-
-
-def p_type_qualifier_list_1(t):
-    'type_qualifier_list : type_qualifier'
-    pass
-
-
-def p_type_qualifier_list_2(t):
-    'type_qualifier_list : type_qualifier_list type_qualifier'
-    pass
-
-# parameter-type-list:
-
-
-def p_parameter_type_list_1(t):
-    'parameter_type_list : parameter_list'
-    pass
-
-
-def p_parameter_type_list_2(t):
-    'parameter_type_list : parameter_list COMMA ELLIPSIS'
-    pass
-
-# parameter-list:
-
-
-def p_parameter_list_1(t):
-    'parameter_list : parameter_declaration'
-    pass
-
-
-def p_parameter_list_2(t):
-    'parameter_list : parameter_list COMMA parameter_declaration'
-    pass
-
-# parameter-declaration:
-
-
-def p_parameter_declaration_1(t):
-    'parameter_declaration : declaration_specifiers declarator'
-    pass
-
-
-def p_parameter_declaration_2(t):
-    'parameter_declaration : declaration_specifiers abstract_declarator_opt'
-    pass
-
-# identifier-list:
-
-
-def p_identifier_list_1(t):
-    'identifier_list : ID'
-    pass
-
-
-def p_identifier_list_2(t):
-    'identifier_list : identifier_list COMMA ID'
-    pass
-
-# initializer:
-
-
-def p_initializer_1(t):
-    'initializer : assignment_expression'
-    pass
-
-
-def p_initializer_2(t):
-    '''initializer : LBRACE initializer_list RBRACE
-                   | LBRACE initializer_list COMMA RBRACE'''
-    pass
-
-# initializer-list:
-
-
-def p_initializer_list_1(t):
-    'initializer_list : initializer'
-    pass
-
-
-def p_initializer_list_2(t):
-    'initializer_list : initializer_list COMMA initializer'
-    pass
-
-# type-name:
-
-
-def p_type_name(t):
-    'type_name : specifier_qualifier_list abstract_declarator_opt'
-    pass
-
-
-def p_abstract_declarator_opt_1(t):
-    'abstract_declarator_opt : empty'
-    pass
-
-
-def p_abstract_declarator_opt_2(t):
-    'abstract_declarator_opt : abstract_declarator'
-    pass
-
-# abstract-declarator:
-
-
-def p_abstract_declarator_1(t):
-    'abstract_declarator : pointer '
-    pass
-
-
-def p_abstract_declarator_2(t):
-    'abstract_declarator : pointer direct_abstract_declarator'
-    pass
-
-
-def p_abstract_declarator_3(t):
-    'abstract_declarator : direct_abstract_declarator'
-    pass
-
-# direct-abstract-declarator:
-
-
-def p_direct_abstract_declarator_1(t):
-    'direct_abstract_declarator : LPAREN abstract_declarator RPAREN'
-    pass
-
-
-def p_direct_abstract_declarator_2(t):
-    'direct_abstract_declarator : direct_abstract_declarator LBRACKET constant_expression_opt RBRACKET'
-    pass
-
-
-def p_direct_abstract_declarator_3(t):
-    'direct_abstract_declarator : LBRACKET constant_expression_opt RBRACKET'
-    pass
-
-
-def p_direct_abstract_declarator_4(t):
-    'direct_abstract_declarator : direct_abstract_declarator LPAREN parameter_type_list_opt RPAREN'
-    pass
-
-
-def p_direct_abstract_declarator_5(t):
-    'direct_abstract_declarator : LPAREN parameter_type_list_opt RPAREN'
-    pass
-
-# Optional fields in abstract declarators
-
-
-def p_constant_expression_opt_1(t):
-    'constant_expression_opt : empty'
-    pass
-
-
-def p_constant_expression_opt_2(t):
-    'constant_expression_opt : constant_expression'
-    pass
-
-
-def p_parameter_type_list_opt_1(t):
-    'parameter_type_list_opt : empty'
-    pass
-
-
-def p_parameter_type_list_opt_2(t):
-    'parameter_type_list_opt : parameter_type_list'
-    pass
-
-# statement:
-
-
-def p_statement(t):
+# constant
+def p_constant(p):
     '''
-    statement : labeled_statement
-              | expression_statement
-              | compound_statement
-              | selection_statement
-              | iteration_statement
-              | jump_statement
-              '''
-    pass
-
-# labeled-statement:
-
-
-def p_labeled_statement_1(t):
-    'labeled_statement : ID COLON statement'
-    pass
-
-
-def p_labeled_statement_2(t):
-    'labeled_statement : CASE constant_expression COLON statement'
-    pass
-
-
-def p_labeled_statement_3(t):
-    'labeled_statement : DEFAULT COLON statement'
-    pass
-
-# expression-statement:
-
-
-def p_expression_statement(t):
-    'expression_statement : expression_opt SEMI'
-    pass
-
-# compound-statement:
-
-
-def p_compound_statement_1(t):
-    'compound_statement : LBRACE declaration_list statement_list RBRACE'
-    pass
-
-
-def p_compound_statement_2(t):
-    'compound_statement : LBRACE statement_list RBRACE'
-    pass
-
-
-def p_compound_statement_3(t):
-    'compound_statement : LBRACE declaration_list RBRACE'
-    pass
-
-
-def p_compound_statement_4(t):
-    'compound_statement : LBRACE RBRACE'
-    pass
-
-# statement-list:
-
-
-def p_statement_list_1(t):
-    'statement_list : statement'
-    pass
-
-
-def p_statement_list_2(t):
-    'statement_list : statement_list statement'
-    pass
-
-# selection-statement
-
-
-def p_selection_statement_1(t):
-    'selection_statement : IF LPAREN expression RPAREN statement'
-    pass
-
-
-def p_selection_statement_2(t):
-    'selection_statement : IF LPAREN expression RPAREN statement ELSE statement '
-    pass
-
-
-def p_selection_statement_3(t):
-    'selection_statement : SWITCH LPAREN expression RPAREN statement '
-    pass
-
-# iteration_statement:
-
-
-def p_iteration_statement_1(t):
-    'iteration_statement : WHILE LPAREN expression RPAREN statement'
-    pass
-
-
-def p_iteration_statement_2(t):
-    'iteration_statement : FOR LPAREN expression_opt SEMI expression_opt SEMI expression_opt RPAREN statement '
-    pass
-
-
-def p_iteration_statement_3(t):
-    'iteration_statement : DO statement WHILE LPAREN expression RPAREN SEMI'
-    pass
-
-# jump_statement:
-
-
-def p_jump_statement_1(t):
-    'jump_statement : GOTO ID SEMI'
-    pass
-
-
-def p_jump_statement_2(t):
-    'jump_statement : CONTINUE SEMI'
-    pass
-
-
-def p_jump_statement_3(t):
-    'jump_statement : BREAK SEMI'
-    pass
-
-
-def p_jump_statement_4(t):
-    'jump_statement : RETURN expression_opt SEMI'
-    pass
-
-
-def p_expression_opt_1(t):
-    'expression_opt : empty'
-    pass
-
-
-def p_expression_opt_2(t):
-    'expression_opt : expression'
-    pass
-
-# expression:
-
-
-def p_expression_1(t):
-    'expression : assignment_expression'
-    pass
-
-
-def p_expression_2(t):
-    'expression : expression COMMA assignment_expression'
-    pass
-
-# assigment_expression:
-
-
-def p_assignment_expression_1(t):
-    'assignment_expression : conditional_expression'
-    pass
-
-
-def p_assignment_expression_2(t):
-    'assignment_expression : unary_expression assignment_operator assignment_expression'
-    pass
-
-# assignment_operator:
-
-
-def p_assignment_operator(t):
+        constant : ICONST
+                 | FCONST
+                 | CCONST
     '''
-    assignment_operator : EQUALS
-                        | TIMESEQUAL
-                        | DIVEQUAL
-                        | MODEQUAL
-                        | PLUSEQUAL
-                        | MINUSEQUAL
-                        | LSHIFTEQUAL
-                        | RSHIFTEQUAL
-                        | ANDEQUAL
-                        | OREQUAL
-                        | XOREQUAL
-                        '''
     pass
+
+
+# primary-expression
+def p_primary_expression(p):
+    '''
+        primary_expression : ID
+                           | constant
+                           | STR_LITER
+                           | LPAREN expression RPAREN
+    '''
+    pass
+
+
+# postfix-expression
+def p_postfix_expression(p):
+    '''
+        postfix_expression : primary_expression
+                           | postfix_expression LBRACKET expression RBRACKET
+                           | postfix_expression LPAREN argument_expression_list RPAREN
+                           | postfix_expression PERIOD ID
+                           | postfix_expression ARROW ID
+                           | postfix_expression INCREMENT
+                           | postfix_expression DECREMENT
+    '''
+    pass
+
+
+# argument-expression-list:
+def p_argument_expression_list(p):
+    '''
+        argument_expression_list : assignment_expression
+                                 | argument_expression_list COMMA assignment_expression
+    '''
+    pass
+
+
+# unary-expression
+def p_unary_expression(p):
+    '''
+        unary_expression : postfix_expression
+                         | INCREMENT unary_expression
+                         | DECREMENT unary_expression
+                         | unary_operator cast_expression
+                         | SIZEOF unary_expression
+                         | SIZEOF LPAREN type_name RPAREN
+    '''
+    pass
+
+
+# unary-operator
+def p_unary_operator(p):
+    '''
+        unary_operator : AMPERSAND
+                       | ASTERISK
+                       | PLUS
+                       | MINUS
+                       | B_NOT
+                       | L_NOT
+    '''
+    pass
+
+
+# cast-expression
+def p_cast_expression(p):
+    '''
+        cast_expression : unary_expression
+                        | LPAREN type_name RPAREN cast_expression
+    '''
+    pass
+
+
+# multiplicative-expression
+def p_multiplicative_expression(p):
+    '''
+        multiplicative_expression : cast_expression
+                                  | multiplicative_expression ASTERISK cast_expression
+                                  | multiplicative_expression DIV cast_expression
+                                  | multiplicative_expression MOD cast_expression
+    '''
+    pass
+
+
+# additive-expression
+def p_additive_expression(p):
+    '''
+        additive_expression : multiplicative_expression
+                            | additive_expression PLUS multiplicative_expression
+                            | additive_expression MINUS multiplicative_expression
+    '''
+    pass
+
+
+# shift-expression
+def p_shift_expression(p):
+    '''
+        shift_expression : additive_expression
+                         | shift_expression B_LSHIFT additive_expression
+                         | shift_expression B_RSHIFT additive_expression
+    '''
+    pass
+
+
+# relational-expression
+def p_relational_expression(p):
+    '''
+        relational_expression : shift_expression
+                              | relational_expression LT shift_expression
+                              | relational_expression GT shift_expression
+                              | relational_expression LE shift_expression
+                              | relational_expression GE shift_expression
+    '''
+    pass
+
+
+# equality-expression
+def p_equality_expression(p):
+    '''
+        equality_expression : relational_expression
+                            | equality_expression EQ relational_expression
+                            | equality_expression NE relational_expression
+    '''
+    pass
+
+
+# AND-expression
+def p_AND_expression(p):
+    '''
+        AND_expression : equality_expression
+                       | AND_expression AMPERSAND equality_expression
+    '''
+    pass
+
+
+# exclusive-OR-expression
+def p_exclusive_OR_expression(p):
+    '''
+        exclusive_OR_expression : AND_expression
+                                | exclusive_OR_expression B_XOR AND_expression
+    '''
+    pass
+
+
+# inclusive-OR-expression
+def p_inclusive_OR_expression(p):
+    '''
+        inclusive_OR_expression : exclusive_OR_expression
+                                | inclusive_OR_expression B_OR exclusive_OR_expression
+    '''
+    pass
+
+
+# logical-and-expression
+def p_logical_AND_expression(p):
+    '''
+        logical_AND_expression : inclusive_OR_expression
+                               | logical_AND_expression L_AND inclusive_OR_expression
+    '''
+    pass
+
+
+# logical-or-expression
+def p_logical_OR_expression(p):
+    '''
+        logical_OR_expression : logical_AND_expression
+                              | logical_OR_expression L_OR logical_AND_expression
+    '''
+    pass
+
 
 # conditional-expression
-
-
-def p_conditional_expression_1(t):
-    'conditional_expression : logical_or_expression'
+def p_conditional_expression(p):
+    '''
+        conditional_expression : logical_OR_expression
+                               | logical_OR_expression TERNARY expression COLON conditional_expression
+    '''
     pass
 
 
-def p_conditional_expression_2(t):
-    'conditional_expression : logical_or_expression CONDOP expression COLON conditional_expression '
+# assignment-expression
+def p_assignment_expression(p):
+    '''
+        assignment_expression : conditional_expression
+                              | unary_expression assignment_operator assignment_expression
+    '''
     pass
+
+
+# assignment-operator
+def p_assignment_operator(p):
+    '''
+        assignment_operator : ASSIGN
+                            | MUL_ASSIGN
+                            | DIV_ASSIGN
+                            | MOD_ASSIGN
+                            | ADD_ASSIGN
+                            | SUB_ASSIGN
+                            | B_LSHIFT_ASSIGN
+                            | B_RSHIFT_ASSIGN
+                            | B_AND_ASSIGN
+                            | B_XOR_ASSIGN
+                            | B_OR_ASSIGN
+    '''
+    pass
+
+
+# expression
+def p_expression(p):
+    '''
+        expression : assignment_expression
+                   | expression COMMA assignment_expression
+    '''
+    pass
+
 
 # constant-expression
-
-
-def p_constant_expression(t):
+def p_constant_expression(p):
     'constant_expression : conditional_expression'
     pass
 
-# logical-or-expression
 
-
-def p_logical_or_expression_1(t):
-    'logical_or_expression : logical_and_expression'
+# declaration
+def p_declaration(p):
+    '''
+        declaration : declaration_specifiers SEMI_COLON
+                    | declaration_specifiers init_declarator_list SEMI_COLON
+    '''
     pass
 
 
-def p_logical_or_expression_2(t):
-    'logical_or_expression : logical_or_expression LOR logical_and_expression'
-    pass
-
-# logical-and-expression
-
-
-def p_logical_and_expression_1(t):
-    'logical_and_expression : inclusive_or_expression'
-    pass
-
-
-def p_logical_and_expression_2(t):
-    'logical_and_expression : logical_and_expression LAND inclusive_or_expression'
-    pass
-
-# inclusive-or-expression:
-
-
-def p_inclusive_or_expression_1(t):
-    'inclusive_or_expression : exclusive_or_expression'
+# declaration-specifiers
+def p_declaration_specifiers(p):
+    '''
+        declaration_specifiers : storage_class_specifier
+                               | storage_class_specifier declaration_specifiers
+                               | type_specifier
+                               | type_specifier declaration_specifiers
+                               | type_qualifier
+                               | type_qualifier declaration_specifiers
+    '''
     pass
 
 
-def p_inclusive_or_expression_2(t):
-    'inclusive_or_expression : inclusive_or_expression OR exclusive_or_expression'
-    pass
-
-# exclusive-or-expression:
-
-
-def p_exclusive_or_expression_1(t):
-    'exclusive_or_expression :  and_expression'
+# init-declarator-list:
+def p_init_declarator_list(p):
+    '''
+        init_declarator_list : init_declarator
+                             | init_declarator_list COMMA init_declarator
+    '''
     pass
 
 
-def p_exclusive_or_expression_2(t):
-    'exclusive_or_expression :  exclusive_or_expression XOR and_expression'
-    pass
-
-# AND-expression
-
-
-def p_and_expression_1(t):
-    'and_expression : equality_expression'
+# init-declarator
+def p_init_declarator(p):
+    '''
+        init_declarator : declarator
+                        | declarator ASSIGN initializer
+    '''
     pass
 
 
-def p_and_expression_2(t):
-    'and_expression : and_expression AND equality_expression'
+# storage-class-specifier
+def p_storage_class_specifier(p):
+    '''
+        storage_class_specifier : TYPEDEF
+                                | EXTERN
+                                | STATIC
+                                | AUTO
+                                | REGISTER
+    '''
     pass
 
 
-# equality-expression:
-def p_equality_expression_1(t):
-    'equality_expression : relational_expression'
+# type-specifier
+def p_type_specifier(p):
+    '''
+        type_specifier : VOID
+                       | CHAR
+                       | SHORT
+                       | INT
+                       | LONG
+                       | FLOAT
+                       | DOUBLE
+                       | SIGNED
+                       | UNSIGNED
+                       | struct_or_union_specifier
+                       | enum_specifier
+                       | typedef_name
+    '''
     pass
 
 
-def p_equality_expression_2(t):
-    'equality_expression : equality_expression EQ relational_expression'
+# struct-or-union-specifier
+def p_struct_or_union_specifier(p):
+    '''
+        struct_or_union_specifier : struct_or_union ID
+                                  | struct_or_union LBRACE struct_declaration_list RBRACE
+                                  | struct_or_union ID LBRACE struct_declaration_list RBRACE
+
+    '''
     pass
 
 
-def p_equality_expression_3(t):
-    'equality_expression : equality_expression NE relational_expression'
+# struct-or-union
+def p_struct_or_union(p):
+    '''
+        struct_or_union : STRUCT
+                        | UNION
+    '''
     pass
 
 
-# relational-expression:
-def p_relational_expression_1(t):
-    'relational_expression : shift_expression'
+# struct-declaration-list
+def p_struct_declaration_list(p):
+    '''
+        struct_declaration_list : struct_declaration
+                                | struct_declaration_list struct_declaration
+    '''
     pass
 
 
-def p_relational_expression_2(t):
-    'relational_expression : relational_expression LT shift_expression'
+# struct-declaration
+def p_struct_declaration(p):
+    'struct_declaration : specifier_qualifier_list struct_declarator_list SEMI_COLON'
     pass
 
 
-def p_relational_expression_3(t):
-    'relational_expression : relational_expression GT shift_expression'
+# specifier-qualifier-list
+def p_specifier_qualifier_list(p):
+    '''
+        specifier_qualifier_list : type_specifier
+                                 | type_specifier specifier_qualifier_list
+                                 | type_qualifier
+                                 | type_qualifier specifier_qualifier_list
+    '''
     pass
 
 
-def p_relational_expression_4(t):
-    'relational_expression : relational_expression LE shift_expression'
+# struct-declarator-list
+def p_struct_declarator_list(p):
+    '''
+        struct_declarator_list : struct_declarator
+                               | struct_declarator_list COMMA struct_declarator
+    '''
     pass
 
 
-def p_relational_expression_5(t):
-    'relational_expression : relational_expression GE shift_expression'
-    pass
-
-# shift-expression
-
-
-def p_shift_expression_1(t):
-    'shift_expression : additive_expression'
-    pass
-
-
-def p_shift_expression_2(t):
-    'shift_expression : shift_expression LSHIFT additive_expression'
+# struct-declarator
+def p_struct_declarator(p):
+    '''
+        struct_declarator : declarator
+                          | COLON constant_expression
+                          | declarator COLON constant_expression
+    '''
     pass
 
 
-def p_shift_expression_3(t):
-    'shift_expression : shift_expression RSHIFT additive_expression'
-    pass
-
-# additive-expression
-
-
-def p_additive_expression_1(t):
-    'additive_expression : multiplicative_expression'
-    pass
-
-
-def p_additive_expression_2(t):
-    'additive_expression : additive_expression PLUS multiplicative_expression'
+# enum-specifier
+def p_enum_specifier(p):
+    '''
+        enum_specifier : ENUM LBRACE enumerator_list RBRACE
+                       | ENUM ID LBRACE enumerator_list RBRACE
+                       | ENUM ID
+    '''
     pass
 
 
-def p_additive_expression_3(t):
-    'additive_expression : additive_expression MINUS multiplicative_expression'
-    pass
-
-# multiplicative-expression
-
-
-def p_multiplicative_expression_1(t):
-    'multiplicative_expression : cast_expression'
+# enumerator-list:
+def p_enumerator_list(p):
+    '''
+        enumerator_list : enumerator
+                        | enumerator_list COMMA enumerator
+    '''
     pass
 
 
-def p_multiplicative_expression_2(t):
-    'multiplicative_expression : multiplicative_expression TIMES cast_expression'
+# enumerator
+def p_enumerator(p):
+    '''
+        enumerator : ECONST
+                   | ECONST ASSIGN constant_expression
+    '''
     pass
 
 
-def p_multiplicative_expression_3(t):
-    'multiplicative_expression : multiplicative_expression DIVIDE cast_expression'
+# type-qualifier
+def p_type_qualifier(p):
+    '''
+        type_qualifier : CONST
+                       | VOLATILE
+    '''
     pass
 
 
-def p_multiplicative_expression_4(t):
-    'multiplicative_expression : multiplicative_expression MOD cast_expression'
-    pass
-
-# cast-expression:
-
-
-def p_cast_expression_1(t):
-    'cast_expression : unary_expression'
+# declarator
+def p_declarator(p):
+    '''
+        declarator : direct_declarator
+                   | pointer direct_declarator
+    '''
     pass
 
 
-def p_cast_expression_2(t):
-    'cast_expression : LPAREN type_name RPAREN cast_expression'
-    pass
-
-# unary-expression:
-
-
-def p_unary_expression_1(t):
-    'unary_expression : postfix_expression'
-    pass
-
-
-def p_unary_expression_2(t):
-    'unary_expression : PLUSPLUS unary_expression'
+# direct-declarator
+def p_direct_declarator(p):
+    '''
+        direct_declarator : ID
+                          | LPAREN declarator RPAREN
+                          | direct_declarator LPAREN RPAREN
+                          | direct_declarator LBRACKET constant_expression RBRACKET
+                          | direct_declarator LPAREN parameter_type_list RPAREN
+                          | direct_declarator LPAREN identifier_list RPAREN
+    '''
     pass
 
 
-def p_unary_expression_3(t):
-    'unary_expression : MINUSMINUS unary_expression'
+# pointer
+def p_pointer(p):
+    '''
+        pointer : ASTERISK
+                | ASTERISK type_qualifier_list
+                | ASTERISK pointer
+                | ASTERISK type_qualifier_list pointer
+    '''
     pass
 
 
-def p_unary_expression_4(t):
-    'unary_expression : unary_operator cast_expression'
+# type-qualifier-list
+def p_type_qualifier_list(p):
+    '''
+        type_qualifier_list : type_qualifier
+                            | type_qualifier_list type_qualifier
+    '''
     pass
 
 
-def p_unary_expression_5(t):
-    'unary_expression : SIZEOF unary_expression'
+# parameter-type-list
+def p_parameter_type_list(p):
+    '''
+        parameter_type_list : parameter_list
+                            | parameter_list COMMA ELLIPSIS
+    '''
     pass
 
 
-def p_unary_expression_6(t):
-    'unary_expression : SIZEOF LPAREN type_name RPAREN'
-    pass
-
-# unary-operator
-
-
-def p_unary_operator(t):
-    '''unary_operator : AND
-                    | TIMES
-                    | PLUS
-                    | MINUS
-                    | NOT
-                    | LNOT '''
-    pass
-
-# postfix-expression:
-
-
-def p_postfix_expression_1(t):
-    'postfix_expression : primary_expression'
+# parameter-list
+def p_parameter_list(p):
+    '''
+        parameter_list : parameter_declaration
+                       | parameter_list COMMA parameter_declaration
+    '''
     pass
 
 
-def p_postfix_expression_2(t):
-    'postfix_expression : postfix_expression LBRACKET expression RBRACKET'
+# parameter-declaration
+def p_parameter_declaration(p):
+    '''
+        parameter_declaration : declaration_specifiers declarator
+                              | declaration_specifiers
+                              | declaration_specifiers abstract_declarator
+    '''
     pass
 
 
-def p_postfix_expression_3(t):
-    'postfix_expression : postfix_expression LPAREN argument_expression_list RPAREN'
+# identifier-list
+def p_identifier_list(p):
+    '''
+        identifier_list : ID
+                        | identifier_list COMMA ID
+    '''
     pass
 
 
-def p_postfix_expression_4(t):
-    'postfix_expression : postfix_expression LPAREN RPAREN'
+# type-name
+def p_type_name(p):
+    '''
+        type_name : specifier_qualifier_list
+                  | specifier_qualifier_list abstract_declarator
+    '''
     pass
 
 
-def p_postfix_expression_5(t):
-    'postfix_expression : postfix_expression PERIOD ID'
+# abstract-declaration
+def p_abstract_declarator(p):
+    '''
+        abstract_declarator : pointer
+                             | direct_abstract_declarator
+                             | pointer direct_abstract_declarator
+    '''
     pass
 
 
-def p_postfix_expression_6(t):
-    'postfix_expression : postfix_expression ARROW ID'
+# direct-abstract-declaration
+def p_direct_abstract_declarator(p):
+    '''
+        direct_abstract_declarator : LPAREN abstract_declarator RPAREN
+                                   | LBRACKET RBRACKET
+                                   | LBRACKET constant_expression RBRACKET
+                                   | direct_abstract_declarator LBRACKET RBRACKET
+                                   | direct_abstract_declarator LBRACKET constant_expression RBRACKET
+                                   | LPAREN RPAREN
+                                   | LPAREN parameter_type_list RPAREN
+                                   | direct_abstract_declarator LPAREN RPAREN
+                                   | direct_abstract_declarator LPAREN parameter_type_list RPAREN
+    '''
     pass
 
 
-def p_postfix_expression_7(t):
-    'postfix_expression : postfix_expression PLUSPLUS'
+# typedef-name
+def p_typedef_name(p):
+    'typedef_name : ID'
     pass
 
 
-def p_postfix_expression_8(t):
-    'postfix_expression : postfix_expression MINUSMINUS'
-    pass
-
-# primary-expression:
-
-
-def p_primary_expression(t):
-    '''primary_expression :  ID
-                        |  constant
-                        |  SCONST
-                        |  LPAREN expression RPAREN'''
-    pass
-
-# argument-expression-list:
-
-
-def p_argument_expression_list(t):
-    '''argument_expression_list :  assignment_expression
-                              |  argument_expression_list COMMA assignment_expression'''
-    pass
-
-# constant:
-
-
-def p_constant(t):
-    '''constant : ICONST
-               | FCONST
-               | CCONST'''
+# initializer
+def p_initializer(p):
+    '''
+        initializer : assignment_expression
+                    | LBRACE initializer_list RBRACE
+                    | LBRACE initializer_list COMMA RBRACE
+    '''
     pass
 
 
-def p_empty(t):
+# initializer-list
+def p_initializer_list(p):
+    '''
+        initializer_list : initializer
+                         | initializer_list COMMA initializer
+    '''
+    pass
+
+
+# statement
+def p_statement(p):
+    '''
+        statement : labeled_statement
+                  | compound_statement
+                  | expression_statement
+                  | selection_statement
+                  | iteration_statement
+                  | jump_statement
+    '''
+    pass
+
+
+# labeled-statement
+def p_labeled_statement(p):
+    '''
+        labeled_statement : ID COLON statement
+                          | CASE constant_expression COLON statement
+                          | DEFAULT COLON statement
+    '''
+    pass
+
+
+# compound-statement
+def p_compound_statement(p):
+    '''
+        compound_statement : LBRACE RBRACE
+                           | LBRACE declaration_list RBRACE
+                           | LBRACE statement_list RBRACE
+                           | LBRACE declaration_list statement_list RBRACE
+    '''
+    pass
+
+
+# declaration-list
+def p_declaration_list(p):
+    '''
+        declaration_list : declaration
+                         | declaration_list declaration
+    '''
+    pass
+
+
+# statement-list
+def p_statement_list(p):
+    '''
+        statement_list : statement
+                       | statement_list statement
+    '''
+    pass
+
+
+# expression-statement
+def p_expression_statement(p):
+    '''
+        expression_statement : SEMI_COLON
+                             | expression SEMI_COLON
+    '''
+    pass
+
+
+# selection-statement
+def p_selection_statement(p):
+    '''
+        selection_statement : IF LPAREN expression RPAREN statement
+                            | IF LPAREN expression RPAREN statement ELSE statement
+                            | SWITCH LPAREN expression RPAREN statement
+    '''
+    pass
+
+
+# iteration_statement
+def p_iteration_statement(p):
+    '''
+        iteration_statement : WHILE LPAREN expression RPAREN statement
+                            | DO statement WHILE LPAREN expression RPAREN SEMI_COLON
+                            | FOR LPAREN expression_opt SEMI_COLON expression_opt SEMI_COLON expression_opt RPAREN statement
+    '''
+    pass
+
+
+# jump_statement
+def p_jump_statement(p):
+    '''
+        jump_statement : GOTO ID SEMI_COLON
+                       | CONTINUE SEMI_COLON
+                       | BREAK SEMI_COLON
+                       | RETURN SEMI_COLON
+                       | RETURN expression SEMI_COLON
+    '''
+    pass
+
+
+# translation-unit
+def p_translation_unit(p):
+    '''
+        translation_unit : external_declaration
+                         | translation_unit external_declaration
+    '''
+    pass
+
+
+# external-declaration
+def p_external_declaration(p):
+    '''
+        external_declaration : function_definition
+                             | declaration
+    '''
+    pass
+
+
+# function-definition
+def p_function_definition(p):
+    '''
+        function_definition : declarator compound_statement
+                            | declaration_specifiers declarator compound_statement
+                            | declarator declaration_list compound_statement
+                            | declaration_specifiers declarator declaration_list compound_statement
+    '''
+    pass
+
+
+# empty
+def p_empty(p):
     'empty : '
     pass
 
 
-def p_error(t):
+# opts
+def p_expression_opt(p):
+    '''
+        expression_opt : expression
+                       | empty
+    '''
+    pass
+
+
+def p_error(p):
     print("Whoa. We're hosed")
+
 
 import profile
 # Build the grammar
 
 yacc.yacc()
+
+while 1:
+    try:
+        s = input('expr > ')
+    except EOFError:
+        break
+    if not s:
+        continue
+    yacc.parse(s)
+
 #yacc.yacc(method='LALR',write_tables=False,debug=False)
 
 #profile.run("yacc.yacc(method='LALR')")
-( I N T , ' i n t ' , 1 , 0 )  
- ( I D , ' m a i n ' , 1 , 4 )  
- ( L P A R E N , ' ( ' , 1 , 8 )  
- ( R P A R E N , ' ) ' , 1 , 9 )  
- ( L B R A C E , ' { ' , 2 , 1 1 )  
- ( R E T U R N , ' r e t u r n ' , 3 , 1 5 )  
- ( I C O N S T , ' 0 ' , 3 , 2 2 )  
- ( S E M I , ' ; ' , 3 , 2 3 )  
- ( R B R A C E , ' } ' , 4 , 2 5 )  
- 
-( I N T , ' i n t ' , 1 , 0 )  
- ( I D , ' m a i n ' , 1 , 4 )  
- ( L P A R E N , ' ( ' , 1 , 8 )  
- ( R P A R E N , ' ) ' , 1 , 9 )  
- ( L B R A C E , ' { ' , 2 , 1 1 )  
- ( I N T , ' i n t ' , 3 , 1 5 )  
- ( I D , ' i ' , 3 , 1 9 )  
- ( S E M I , ' ; ' , 3 , 2 0 )  
- ( I D , ' i ' , 4 , 2 4 )  
- ( E Q U A L S , ' = ' , 4 , 2 6 )  
- ( I C O N S T , ' 1 ' , 4 , 2 8 )  
- ( S E M I , ' ; ' , 4 , 2 9 )  
- ( R E T U R N , ' r e t u r n ' , 5 , 3 3 )  
- ( I C O N S T , ' 0 ' , 5 , 4 0 )  
- ( S E M I , ' ; ' , 5 , 4 1 )  
- ( R B R A C E , ' } ' , 6 , 4 3 )  
- 
-( I N T , ' i n t ' , 1 , 0 )  
- ( I D , ' m a i n ' , 1 , 4 )  
- ( L P A R E N , ' ( ' , 1 , 8 )  
- ( R P A R E N , ' ) ' , 1 , 9 )  
- ( L B R A C E , ' { ' , 2 , 1 1 )  
- ( I N T , ' i n t ' , 3 , 1 5 )  
- ( I D , ' i ' , 3 , 1 9 )  
- ( S E M I , ' ; ' , 3 , 2 0 )  
- ( I D , ' i ' , 4 , 2 4 )  
- ( E Q U A L S , ' = ' , 4 , 2 6 )  
- ( I C O N S T , ' 1 ' , 4 , 2 8 )  
- ( S E M I , ' ; ' , 4 , 2 9 )  
- ( R E T U R N , ' r e t u r n ' , 5 , 3 3 )  
- ( I C O N S T , ' 0 ' , 5 , 4 0 )  
- ( S E M I , ' ; ' , 5 , 4 1 )  
- ( R B R A C E , ' } ' , 6 , 4 3 )  
- Reading from standard input (type EOF to end):
-(INT,'int',1,0)
-(ID,'main',1,4)
-(LPAREN,'(',1,8)
-(RPAREN,')',1,9)
-(LBRACE,'{',2,11)
-(INT,'int',3,15)
-(ID,'i',3,19)
-(SEMI,';',3,20)
-(ID,'i',4,24)
-(EQUALS,'=',4,26)
-(ICONST,'1',4,28)
-(SEMI,';',4,29)
-(RETURN,'return',5,33)
-(ICONST,'0',5,40)
-(SEMI,';',5,41)
-(RBRACE,'}',6,43)
