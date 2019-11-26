@@ -136,7 +136,8 @@ class semantic_analyzer:
 					return Type("const char*")
 
 				else:
-					return # TODO : lookup(child_name_node)
+					# TODO : lookup(child_name_node)
+					pass
 
 			else:
 				self.expression_check(child_node[1])
@@ -195,7 +196,8 @@ class semantic_analyzer:
 
 			if len(child_node) > 1:
 				# TODO : Check that two types are compatible
-				return self.binary_same(self.expression_check(child_node[0]), self.expression_check(child_node[2]))
+				self.binary_same(self.expression_check(child_node[0]), self.expression_check(child_node[2]))
+				return Type("int")
 
 			else:
 				return self.expression_check(child_node[0])
@@ -204,7 +206,8 @@ class semantic_analyzer:
 
 			if len(child_node) > 1:
 				# TODO : Check that two types are compatible
-				return self.binary_same(self.expression_check(child_node[0]), self.expression_check(child_node[2]))
+				self.binary_same(self.expression_check(child_node[0]), self.expression_check(child_node[2]))
+				return Type("int")
 
 			else:
 				return self.expression_check(child_node[0])
@@ -240,7 +243,8 @@ class semantic_analyzer:
 
 			if len(child_node) > 1:
 				# TODO : Check that two types are value
-				return self.trinary_same(self.expression_check(child_node[0]), self.expression_check(child_node[2]), self.expression_check(child_node[4]))
+				self.binary_same(self.expression_check(child_node[0]), Type("int"))
+				return self.binary_same(self.expression_check(child_node[2]), self.expression_check(child_node[4]))
 
 			else:
 				return self.expression_check(child_node[0])
@@ -266,13 +270,59 @@ class semantic_analyzer:
 				return self.expression_check(child_node[0])
 
 		elif name_node == "empty":
-			return Type("null")
+			return Type("void")
 
 		else:
 			return self.expression_check(child_node[0])
 
 	def statement_check(self, cursor):
-		pass
+		# AST type of current cursor
+		name_node = cursor.data[0]
+		child_node = cursor.children
+
+		if name_node == "jump_statement":
+
+			if child_node[0].data[0] == "return":
+				return self.expression_check(child_node[1])
+
+			else:
+				return Type("void")
+
+		elif name_node == "iteration_statement":
+
+			if child_node[0].data[0] == "while":
+				self.binary_same(self.expression_check(child_node[2]), Type("int"))
+				return self.statement_check(child_node[4])
+
+			elif child_node[0].data[0] == "for":
+				self.expression_check(child_node[2])
+				self.binary_same(self.expression_check(child_node[4]), Type("int"))
+				self.expression_check(child_node[6])
+				return self.statement_check(child_node[8])
+
+			elif child_node[0].data[0] == "do":
+				self.binary_same(self.expression_check(child_node[4]), Type("int"))
+				return self.statement_check(child_node[1])
+
+			else:
+				TypeError(cursor, "Current statement is not iteration_statement.")
+
+		elif name_node == "selection_statement":
+
+			if child_node[0].data[0] == "if":
+				self.binary_same(self.expression_check(child_node[2]), Type("int"))
+
+				if len(child_node) > 5:
+					return [self.statement_check(child_node[4]), self.statement_check(child_node[6])]
+				else:
+					return self.statement_check(child_node[4])
+
+			elif child_node[0].data[0] == "switch":
+				# TODO : Check switch statement
+				pass
+
+		elif name_node == "statement_list":
+			pass
 
 	def type_check(self, cursor):
 		# AST type of current cursor
