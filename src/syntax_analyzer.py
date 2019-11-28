@@ -647,7 +647,7 @@ def p_statement(p):
                   | iteration_statement
                   | jump_statement
     '''
-    pass
+    p[0] = p[1]
 
 
 # labeled-statement
@@ -657,7 +657,12 @@ def p_labeled_statement(p):
                           | CASE constant_expression COLON statement
                           | DEFAULT COLON statement
     '''
-    pass
+    if isinstance(p[1], node.Node):
+    	p[0] = node.Node('LABEL', p[3], p.lineno(1), [p[1]])
+    elif p[1] == 'case':
+    	p[0] = node.Node('CASE', p[4], p.lineno(1), [p[2]])
+    elif p[1] == 'default':
+    	p[0] = node.Node('DEFAULT', p[3], p.lineno(1))
 
 
 # compound-statement
@@ -668,7 +673,12 @@ def p_compound_statement(p):
                            | LBRACE statement_list RBRACE
                            | LBRACE declaration_list statement_list RBRACE
     '''
-    pass
+    if len(p) == 3:
+    	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [])
+    elif len(p) == 5:
+    	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2], p[3]])
+    else:
+    	p[0] = p[2]
 
 
 # declaration-list
@@ -677,7 +687,10 @@ def p_declaration_list(p):
         declaration_list : declaration
                          | declaration_list declaration
     '''
-    pass
+    if len(p) == 2:
+    	p[0] = p[1]
+    else:
+    	p[0] = node.Node('DCLR_LIST', None, p.lineno(1), [p[1], p[2]])
 
 
 # statement-list
@@ -686,7 +699,10 @@ def p_statement_list(p):
         statement_list : statement
                        | statement_list statement
     '''
-    pass
+    if len(p) == 2:
+    	p[0] = p[1]
+    else:
+    	p[0] = node.Node('STMT_LIST', None, p.lineno(1), [p[1], p[2]])
 
 
 # expression-statement
@@ -695,7 +711,10 @@ def p_expression_statement(p):
         expression_statement : SEMI_COLON
                              | expression SEMI_COLON
     '''
-    pass
+    if len(p) == 2:
+    	p[0] = node.Node('EXPR_STMT', None, p.lineno(1))
+    else:
+    	p[0] = p[1]
 
 
 # selection-statement
@@ -705,7 +724,13 @@ def p_selection_statement(p):
                             | IF LPAREN expression RPAREN statement ELSE statement
                             | SWITCH LPAREN expression RPAREN statement
     '''
-    pass
+    if p[1] == 'if':
+    	if len(p) == 6:
+    		p[0] = node.Node('IF', p[3], p.lineno(1), [p[5]])
+    	else:
+    		p[0] = node.Node('IF', p[3], p.lineno(1), [p[5], p[7]])
+    elif p[1] == 'switch':
+    	p[0] = node.Node('SWITCH', p[3], p.lineno(1), [p[5]])
 
 
 # iteration_statement
@@ -715,7 +740,12 @@ def p_iteration_statement(p):
                             | DO statement WHILE LPAREN expression RPAREN SEMI_COLON
                             | FOR LPAREN expression_opt SEMI_COLON expression_opt SEMI_COLON expression_opt RPAREN statement
     '''
-    pass
+    if p[1] == 'while':
+    	p[0] = node.Node('WHILE', p[3], p.lineno(1), [p[5]])
+    elif p[1] == 'do':
+    	p[0] = node.Node('DO_WHILE', p[5], p.lineno(1), [p[2]])
+    elif p[1] == 'for':
+    	p[0] = node.Node('FOR', p[9], p.lineno(1), [p[3], p[5], p[7]])
 
 
 # jump_statement
@@ -727,7 +757,17 @@ def p_jump_statement(p):
                        | RETURN SEMI_COLON
                        | RETURN expression SEMI_COLON
     '''
-    pass
+    if p[1] == 'goto':
+    	p[0] = node.Node('GOTO', p[2], p.lineno(1))
+    elif p[1] == 'continue':
+    	p[0] = node.Node('CONTINUE', None, p.lineno(1))
+    elif p[1] == 'break':
+    	p[0] = node.Node('BREAK', None, p.lineno(1))
+    elif p[1] == 'return':
+    	if len(p) == 3:
+    		p[0] = node.Node('RETURN', None, p.lineno(1))
+    	else:
+    		p[0] = node.Node('RETURN', p[2], p.lineno(1))
 
 
 # translation-unit
@@ -736,7 +776,10 @@ def p_translation_unit(p):
         translation_unit : external_declaration
                          | translation_unit external_declaration
     '''
-    pass
+    if len(p) == 2:
+    	p[0] = p[1]
+    else:
+    	p[0] = node.Node('TRSL_UNIT', None, p.lineno(1), [p[1], p[2]])
 
 
 # external-declaration
@@ -745,7 +788,7 @@ def p_external_declaration(p):
         external_declaration : function_definition
                              | declaration
     '''
-    pass
+    p[0] = p[1]
 
 
 # function-definition
@@ -756,13 +799,13 @@ def p_function_definition(p):
                             | declarator declaration_list compound_statement
                             | declaration_specifiers declarator declaration_list compound_statement
     '''
-    pass
+    p[0] = node.Node('FUNC_DEF', p[-1], p.lineno(1), p[1:-1])
 
 
 # empty
 def p_empty(p):
     'empty : '
-    pass
+    p[0] = node.Node('EMPTY', None, p.lineno(0))
 
 
 # opts
@@ -771,7 +814,10 @@ def p_expression_opt(p):
         expression_opt : expression
                        | empty
     '''
-    pass
+    if p[1].type == 'EMPTY':
+    	p[0] = node.Node('EXPR_OPT', None, p.lineno(0))
+    else:
+    	p[0] = p[1]
 
 
 def p_error(p):
