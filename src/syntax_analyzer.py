@@ -799,7 +799,12 @@ def p_function_definition(p):
                             | declarator declaration_list compound_statement
                             | declaration_specifiers declarator declaration_list compound_statement
     '''
-    p[0] = node.Node('FUNC_DEF', p[-1], p.lineno(1), p[1:-1])
+    if len(p) == 3:
+    	p[0] = node.Node('FUNC_DEF', p[2], p.lineno(1), [p[1]])
+    elif len(p) == 4:
+    	p[0] = node.Node('FUNC_DEF', p[3], p.lineno(1), [p[1], p[2]])
+    else:
+    	p[0] = node.Node('FUNC_DEF', p[4], p.lineno(1), [p[1], p[2], p[3]])
 
 
 # empty
