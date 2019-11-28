@@ -4,8 +4,9 @@ class Node:
         self.value = value
         self.lineno = lineno
         self.children = child_list or []
-        for child in child_list:
-            self.children.append(child)
+        if child_list:
+            for child in child_list:
+                self.children.append(child)
 
     def set_value(self, value):
         self.value = value
