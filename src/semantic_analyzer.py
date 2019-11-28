@@ -360,8 +360,9 @@ ast = parser.parse(s, lexer = lexer)
 # Print out all AST nodes
 def print_ast(cursor, depth):
 	indent = " " * depth
-	print(f"{indent}{cursor.data[0]}")
+	print(f"{indent}{cursor.type}")
 	for child in cursor.children:
 		print_ast(child, depth + 1)
 
-print_ast(ast, 0)
+if ast:
+	print_ast(ast, 0)
