@@ -38,7 +38,7 @@ def p_primary_expression(p):
     if len(p) == 2:
         if isinstance(p[1], node.Node):
             p[0] = p[1]
-        elif p[1] != '(' and p[3] != ')':
+        else:
             p[0] = node.Node(p.slice[1].type, p[1], p.lineno(1))
     else:
         p[0] = p[2]
