@@ -66,8 +66,7 @@ def p_postfix_expression(p):
         index = node.Node('INDEX', P[3].value, p.lineno(3))
         p[0] = node.Node(type, None, p.lineno(2), [id, index])
     elif len(p) == 4:
-        # Todo
-        raise Error
+        raise UnsupportedFeatureError()
     elif len(p) == 3:
         if p[2] == '++':
             p[0] = node.Node('POSTINC', p[1].value, p.lineno(2))
@@ -578,7 +577,7 @@ def p_direct_declarator(p):
         p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1]])
     elif len(p) == 5 and p[3] == '[':
         p[0] = node.Node("ARR_DECL", None, p.lineno(1), [p[1], p[3]])
-    elif len(p) == 5 and p[3].type == "PARAM_LIST": #TODO : parameter_type_list
+    elif len(p) == 5 and p[3].type == "PARAM_LIST":
         p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1], p[3]])
     else:
         p[0] = node.Node("FUN_APP", None, p.lineno(1), [p[1], p[3]])
