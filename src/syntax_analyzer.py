@@ -568,8 +568,18 @@ def p_direct_declarator(p):
                           | direct_declarator LPAREN parameter_type_list RPAREN
                           | direct_declarator LPAREN identifier_list RPAREN
     '''
-    pass
-
+    if len(p) == 2:
+        p[0] = node.Node("ID", p[1], p.lineno(1))
+    elif len(p) == 4 and p[1] == '(':
+        p[0] = p[2]
+    elif len(p) == 4:
+        p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1]])
+    elif len(p) == 5 and p[3] == '[':
+        p[0] = node.Node("ARR_DECL", None, p.lineno(1), [p[1], p[3]])
+    elif len(p) == 5 and p[3].type == "???": #TODO : parameter_type_list
+        p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1], p[3]])
+    else:
+        p[0] = node.Node("TODO", None, p.lineno(1), [p[1], p[3]])
 
 # pointer
 def p_pointer(p):
@@ -724,6 +734,7 @@ def p_compound_statement(p):
                            | LBRACE statement_list RBRACE
                            | LBRACE declaration_list statement_list RBRACE
     '''
+
     if len(p) == 3:
     	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [])
     elif len(p) == 5:
