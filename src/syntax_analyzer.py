@@ -680,7 +680,7 @@ def p_abstract_declarator(p):
                              | direct_abstract_declarator
                              | pointer direct_abstract_declarator
     '''
-    pass
+    raise UnsupportedFeatureError()
 
 
 # direct-abstract-declaration
@@ -696,7 +696,7 @@ def p_direct_abstract_declarator(p):
                                    | direct_abstract_declarator LPAREN RPAREN
                                    | direct_abstract_declarator LPAREN parameter_type_list RPAREN
     '''
-    pass
+    raise UnsupportedFeatureError()
 
 
 # typedef-name
@@ -712,7 +712,10 @@ def p_initializer(p):
                     | LBRACE initializer_list RBRACE
                     | LBRACE initializer_list COMMA RBRACE
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("INIT", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("INIT", None, p.lineno(1), [p[2]])
 
 
 # initializer-list
@@ -780,9 +783,10 @@ def p_declaration_list(p):
                          | declaration_list declaration
     '''
     if len(p) == 2:
-    	p[0] = p[1]
+    	p[0] = node.Node("DECLARATION_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = node.Node('DCLR_LIST', None, p.lineno(1), [p[1], p[2]])
+    	p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # statement-list
@@ -792,9 +796,10 @@ def p_statement_list(p):
                        | statement_list statement
     '''
     if len(p) == 2:
-    	p[0] = p[1]
+    	p[0] = node.Node("STMT_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = node.Node('STMT_LIST', None, p.lineno(1), [p[1], p[2]])
+    	p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # expression-statement
@@ -869,9 +874,10 @@ def p_translation_unit(p):
                          | translation_unit external_declaration
     '''
     if len(p) == 2:
-    	p[0] = p[1]
+    	p[0] = node.Node("TRSL_UNIT", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = node.Node('TRSL_UNIT', None, p.lineno(1), [p[1], p[2]])
+    	p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # external-declaration
