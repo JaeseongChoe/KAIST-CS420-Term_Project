@@ -589,7 +589,12 @@ def p_pointer(p):
                 | ASTERISK pointer
                 | ASTERISK type_qualifier_list pointer
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("POINTER", None, p.lineno(1))
+    elif len(p) == 3:
+        p[0] = node.Node("POINTER", None, p.lineno(1), [p[2]])
+    else:
+        p[0] = node.Node("POINTER", None, p.lineno(1), [p[2], p[3]])
 
 
 # type-qualifier-list
@@ -598,7 +603,11 @@ def p_type_qualifier_list(p):
         type_qualifier_list : type_qualifier
                             | type_qualifier_list type_qualifier
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("TYPE_QUAL_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # parameter-type-list
@@ -607,7 +616,10 @@ def p_parameter_type_list(p):
         parameter_type_list : parameter_list
                             | parameter_list COMMA ELLIPSIS
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        raise UnsupportedFeatureError()
 
 
 # parameter-list
@@ -616,7 +628,11 @@ def p_parameter_list(p):
         parameter_list : parameter_declaration
                        | parameter_list COMMA parameter_declaration
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("PARAM_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # parameter-declaration
@@ -626,7 +642,10 @@ def p_parameter_declaration(p):
                               | declaration_specifiers
                               | declaration_specifiers abstract_declarator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("PARAM_DECLARATION", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("PARAM_DECLARATION", None, p.lineno(1), [p[1], p[2]])
 
 
 # identifier-list
@@ -635,7 +654,11 @@ def p_identifier_list(p):
         identifier_list : ID
                         | identifier_list COMMA ID
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("ID_LIST", [p[1]], p.lineno(1))
+    else:
+        p[0] = p[1]
+        p[0].value.append(p[3])
 
 
 # type-name
@@ -644,7 +667,10 @@ def p_type_name(p):
         type_name : specifier_qualifier_list
                   | specifier_qualifier_list abstract_declarator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("TYPE_NAME", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("TYPE_NAME", None, p.lineno(1), [p[1], p[2]])
 
 
 # abstract-declaration
@@ -676,7 +702,7 @@ def p_direct_abstract_declarator(p):
 # typedef-name
 def p_typedef_name(p):
     'typedef_name : ID'
-    pass
+    p[0] = node.Node("TYPEDEF_NAME", p[1], p.lineno(1))
 
 
 # initializer
@@ -695,7 +721,11 @@ def p_initializer_list(p):
         initializer_list : initializer
                          | initializer_list COMMA initializer
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("INIT_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # statement
