@@ -63,15 +63,15 @@ def p_postfix_expression(p):
         else:
             type = 'FUNCTION'
         id = node.Node(type, p[1], p.lineno(1))
-        index = node.Node('INDEX', P[3].value, p.lineno(3))
+        index = node.Node('INDEX', p[3], p.lineno(3))
         p[0] = node.Node(type, None, p.lineno(2), [id, index])
     elif len(p) == 4:
         raise UnsupportedFeatureError()
     elif len(p) == 3:
         if p[2] == '++':
-            p[0] = node.Node('POSTINC', p[1].value, p.lineno(2))
+            p[0] = node.Node('POSTINC', p[1], p.lineno(2))
         else:
-            p[0] = node.Node('POSTDEC', p[1].value, p.lineno(2))
+            p[0] = node.Node('POSTDEC', p[1], p.lineno(2))
 
 
 # argument-expression-list:
@@ -575,7 +575,7 @@ def p_direct_declarator(p):
         p[0] = p[2]
     elif len(p) == 4:
         p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1]])
-    elif len(p) == 5 and p[3] == '[':
+    elif len(p) == 5 and p[2] == '[':
         p[0] = node.Node("ARR_DECL", None, p.lineno(1), [p[1], p[3]])
     elif len(p) == 5 and p[3].type == "PARAM_LIST":
         p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1], p[3]])
@@ -708,7 +708,7 @@ def p_direct_abstract_declarator(p):
 
 # typedef-name
 def p_typedef_name(p):
-    'typedef_name : ID'
+    'typedef_name : TYPEID'
     p[0] = node.Node("TYPEDEF_NAME", p[1], p.lineno(1))
 
 
@@ -792,7 +792,7 @@ def p_declaration_list(p):
     if len(p) == 2:
     	p[0] = node.Node("DECLARATION_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -805,7 +805,7 @@ def p_statement_list(p):
     if len(p) == 2:
     	p[0] = node.Node("STMT_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -871,7 +871,7 @@ def p_jump_statement(p):
     	if len(p) == 3:
     		p[0] = node.Node('RETURN', None, p.lineno(1))
     	else:
-    		p[0] = node.Node('RETURN', None, p.lineno(1), p[2])
+    		p[0] = node.Node('RETURN', None, p.lineno(1), [p[2]])
 
 
 # translation-unit
@@ -883,7 +883,7 @@ def p_translation_unit(p):
     if len(p) == 2:
     	p[0] = node.Node("TRSL_UNIT", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -932,22 +932,22 @@ def p_expression_opt(p):
 
 def p_error(p):
     print("Whoa. We're hosed")
-    print("lineno: %d, pos: %d" % (p.lineno, p.lexpos))
+    print("lineno: %d, pos: %d, token: %s" % (p.lineno, p.lexpos, p.value))
 
 
 import profile
 # Build the grammar
 
-yacc.yacc()
+parser = yacc.yacc()
 
-while 1:
-    try:
-        s = input('expr > ')
-    except EOFError:
-        break
-    if not s:
-        continue
-    yacc.parse(s)
+# while 1:
+#     try:
+#         s = input('expr > ')
+#     except EOFError:
+#         break
+#     if not s:
+#         continue
+#     yacc.parse(s)
 
 #yacc.yacc(method='LALR',write_tables=False,debug=False)
 
