@@ -324,7 +324,7 @@ def p_constant_expression(p):
     'constant_expression : conditional_expression'
     # This seems redundant, but it is necessary so that we can check whether it is really constant.
     # Note that conditional_expression may not be constant, so we need to check.
-    p[0] = node.Node("CONST_EXP", None, p.lineno(1), [p[1]]])
+    p[0] = node.Node("CONST_EXP", None, p.lineno(1), [p[1]])
 
 
 # declaration
