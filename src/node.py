@@ -4,9 +4,6 @@ class Node:
         self.value = value
         self.lineno = lineno
         self.children = child_list or []
-        if child_list:
-            for child in child_list:
-                self.children.append(child)
 
     def set_value(self, value):
         self.value = value
@@ -14,11 +11,17 @@ class Node:
     def get_value(self):
         return self.value
 
-    def add_child(self, child):
-        self.children.append(child)
+    def add_child(self, child, ind = None):
+        if ind is None:
+            self.children.append(child)
+        else:
+            self.children.insert(child, ind)
 
     def remove_child(self, child):
         self.children.remove(child)
+
+    def remove_at(self, ind):
+        return self.children.pop(ind)
 
     def add_children(self, child_list):
         for child in child_list:

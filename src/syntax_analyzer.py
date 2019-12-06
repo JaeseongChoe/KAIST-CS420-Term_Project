@@ -82,9 +82,10 @@ def p_argument_expression_list(p):
                                  | argument_expression_list COMMA assignment_expression
     '''
     if len(p) == 2:
-        p[0] = p[1]
+        p[0] = node.Node('ARG_EXPR_LIST', None, p.lineno(1), [p[1]])
     else:
-        p[0] = node.Node('ARG_EXPR_LIST', [p[1], p[3]])
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # unary-expression
@@ -331,7 +332,10 @@ def p_declaration(p):
         declaration : declaration_specifiers SEMI_COLON
                     | declaration_specifiers init_declarator_list SEMI_COLON
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('DECLARATION', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node('DECLARATION', None, p.lineno(1), [p[1], p[2]])
 
 
 # declaration-specifiers
@@ -344,7 +348,11 @@ def p_declaration_specifiers(p):
                                | type_qualifier
                                | type_qualifier declaration_specifiers
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('DECL_SPEC_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[2]
+        p[0].add_child(p[1], 0)
 
 
 # init-declarator-list:
@@ -353,7 +361,11 @@ def p_init_declarator_list(p):
         init_declarator_list : init_declarator
                              | init_declarator_list COMMA init_declarator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('INIT_DECL_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # init-declarator
@@ -362,7 +374,10 @@ def p_init_declarator(p):
         init_declarator : declarator
                         | declarator ASSIGN initializer
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('DECL_W/O_INIT', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node('DECL_W_INIT', None, p.lineno(1), [p[1], p[3]])
 
 
 # storage-class-specifier
@@ -374,7 +389,7 @@ def p_storage_class_specifier(p):
                                 | AUTO
                                 | REGISTER
     '''
-    pass
+    p[0] = node.Node('STORAGE_SPEC', p[1], p.lineno(1))
 
 
 # type-specifier
@@ -393,7 +408,10 @@ def p_type_specifier(p):
                        | enum_specifier
                        | typedef_name
     '''
-    pass
+    if isinstance(p[1], node.Node):
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('TYPE_SPEC', p[1], p.lineno(1))
 
 
 # struct-or-union-specifier
@@ -402,9 +420,13 @@ def p_struct_or_union_specifier(p):
         struct_or_union_specifier : struct_or_union ID
                                   | struct_or_union LBRACE struct_declaration_list RBRACE
                                   | struct_or_union ID LBRACE struct_declaration_list RBRACE
-
     '''
-    pass
+    if len(p) == 3:
+        p[0] = node.Node(p[1].upper() + "_SPEC", None, p.lineno(1), [p[2]])
+    elif len(p) == 5:
+        p[0] = node.Node(p[1].upper() + "_SPEC", None, p.lineno(1), [p[3]])
+    else:
+        p[0] = node.Node(p[1].upper() + "_SPEC", None, p.lineno(1), [p[2], p[4]])
 
 
 # struct-or-union
@@ -413,7 +435,7 @@ def p_struct_or_union(p):
         struct_or_union : STRUCT
                         | UNION
     '''
-    pass
+    p[0] = p[1] # This does not returns node, however I used it so we can handle it in struct_or_union_specifier
 
 
 # struct-declaration-list
@@ -422,13 +444,17 @@ def p_struct_declaration_list(p):
         struct_declaration_list : struct_declaration
                                 | struct_declaration_list struct_declaration
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('STRUCT_DECLARATION_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[1])
 
 
 # struct-declaration
 def p_struct_declaration(p):
     'struct_declaration : specifier_qualifier_list struct_declarator_list SEMI_COLON'
-    pass
+    p[0] = node.Node('STRUCT_DECLARATION', None, p.lineno(1), [p[1], p[2]])
 
 
 # specifier-qualifier-list
@@ -439,8 +465,11 @@ def p_specifier_qualifier_list(p):
                                  | type_qualifier
                                  | type_qualifier specifier_qualifier_list
     '''
-    pass
-
+    if len(p) == 2:
+        p[0] = node.Node('SPEC_QUAL', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[2]
+        p[0].add_child(p[1], 0)
 
 # struct-declarator-list
 def p_struct_declarator_list(p):
@@ -448,7 +477,11 @@ def p_struct_declarator_list(p):
         struct_declarator_list : struct_declarator
                                | struct_declarator_list COMMA struct_declarator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('STRUCT_DECLARATOR_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[3]
+        p[0].add_child(p[1], 0)
 
 
 # struct-declarator
@@ -458,7 +491,12 @@ def p_struct_declarator(p):
                           | COLON constant_expression
                           | declarator COLON constant_expression
     '''
-    pass
+    if len(p) == 2:
+        raise NotImplementedError()
+    elif len(p) == 3:
+        raise NotImplementedError()
+    else:
+        raise NotImplementedError()
 
 
 # enum-specifier
@@ -468,7 +506,10 @@ def p_enum_specifier(p):
                        | ENUM ID LBRACE enumerator_list RBRACE
                        | ENUM ID
     '''
-    pass
+    if len(p) == 5:
+        raise NotImplementedError()
+    elif len(p) == 6:
+        raise NotImplementedError()
 
 
 # enumerator-list:
@@ -477,7 +518,11 @@ def p_enumerator_list(p):
         enumerator_list : enumerator
                         | enumerator_list COMMA enumerator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('ENUM_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # enumerator
@@ -486,7 +531,10 @@ def p_enumerator(p):
         enumerator : ECONST
                    | ECONST ASSIGN constant_expression
     '''
-    pass
+    if len(p) == 2:
+        raise NotImplementedError()
+    else:
+        raise NotImplementedError()
 
 
 # type-qualifier
@@ -495,7 +543,7 @@ def p_type_qualifier(p):
         type_qualifier : CONST
                        | VOLATILE
     '''
-    pass
+    p[0] = node.Node('TYPE_QUAL', p[1], p.lineno(1))
 
 
 # declarator
@@ -504,7 +552,10 @@ def p_declarator(p):
         declarator : direct_declarator
                    | pointer direct_declarator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node('DECL', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node('POINT_DECL', '*', p.lineno(2), [p[2]])
 
 
 # direct-declarator
@@ -517,8 +568,18 @@ def p_direct_declarator(p):
                           | direct_declarator LPAREN parameter_type_list RPAREN
                           | direct_declarator LPAREN identifier_list RPAREN
     '''
-    pass
-
+    if len(p) == 2:
+        p[0] = node.Node("ID", p[1], p.lineno(1))
+    elif len(p) == 4 and p[1] == '(':
+        p[0] = p[2]
+    elif len(p) == 4:
+        p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1]])
+    elif len(p) == 5 and p[3] == '[':
+        p[0] = node.Node("ARR_DECL", None, p.lineno(1), [p[1], p[3]])
+    elif len(p) == 5 and p[3].type == "???": #TODO : parameter_type_list
+        p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1], p[3]])
+    else:
+        p[0] = node.Node("TODO", None, p.lineno(1), [p[1], p[3]])
 
 # pointer
 def p_pointer(p):
@@ -528,7 +589,12 @@ def p_pointer(p):
                 | ASTERISK pointer
                 | ASTERISK type_qualifier_list pointer
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("POINTER", None, p.lineno(1))
+    elif len(p) == 3:
+        p[0] = node.Node("POINTER", None, p.lineno(1), [p[2]])
+    else:
+        p[0] = node.Node("POINTER", None, p.lineno(1), [p[2], p[3]])
 
 
 # type-qualifier-list
@@ -537,7 +603,11 @@ def p_type_qualifier_list(p):
         type_qualifier_list : type_qualifier
                             | type_qualifier_list type_qualifier
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("TYPE_QUAL_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # parameter-type-list
@@ -546,7 +616,10 @@ def p_parameter_type_list(p):
         parameter_type_list : parameter_list
                             | parameter_list COMMA ELLIPSIS
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        raise UnsupportedFeatureError()
 
 
 # parameter-list
@@ -555,7 +628,11 @@ def p_parameter_list(p):
         parameter_list : parameter_declaration
                        | parameter_list COMMA parameter_declaration
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("PARAM_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # parameter-declaration
@@ -565,7 +642,10 @@ def p_parameter_declaration(p):
                               | declaration_specifiers
                               | declaration_specifiers abstract_declarator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("PARAM_DECLARATION", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("PARAM_DECLARATION", None, p.lineno(1), [p[1], p[2]])
 
 
 # identifier-list
@@ -574,7 +654,11 @@ def p_identifier_list(p):
         identifier_list : ID
                         | identifier_list COMMA ID
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("ID_LIST", [p[1]], p.lineno(1))
+    else:
+        p[0] = p[1]
+        p[0].value.append(p[3])
 
 
 # type-name
@@ -583,7 +667,10 @@ def p_type_name(p):
         type_name : specifier_qualifier_list
                   | specifier_qualifier_list abstract_declarator
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("TYPE_NAME", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("TYPE_NAME", None, p.lineno(1), [p[1], p[2]])
 
 
 # abstract-declaration
@@ -593,7 +680,7 @@ def p_abstract_declarator(p):
                              | direct_abstract_declarator
                              | pointer direct_abstract_declarator
     '''
-    pass
+    raise UnsupportedFeatureError()
 
 
 # direct-abstract-declaration
@@ -609,13 +696,13 @@ def p_direct_abstract_declarator(p):
                                    | direct_abstract_declarator LPAREN RPAREN
                                    | direct_abstract_declarator LPAREN parameter_type_list RPAREN
     '''
-    pass
+    raise UnsupportedFeatureError()
 
 
 # typedef-name
 def p_typedef_name(p):
     'typedef_name : ID'
-    pass
+    p[0] = node.Node("TYPEDEF_NAME", p[1], p.lineno(1))
 
 
 # initializer
@@ -625,7 +712,10 @@ def p_initializer(p):
                     | LBRACE initializer_list RBRACE
                     | LBRACE initializer_list COMMA RBRACE
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("INIT", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("INIT", None, p.lineno(1), [p[2]])
 
 
 # initializer-list
@@ -634,7 +724,11 @@ def p_initializer_list(p):
         initializer_list : initializer
                          | initializer_list COMMA initializer
     '''
-    pass
+    if len(p) == 2:
+        p[0] = node.Node("INIT_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # statement
@@ -673,6 +767,7 @@ def p_compound_statement(p):
                            | LBRACE statement_list RBRACE
                            | LBRACE declaration_list statement_list RBRACE
     '''
+
     if len(p) == 3:
     	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [])
     elif len(p) == 5:
@@ -688,9 +783,10 @@ def p_declaration_list(p):
                          | declaration_list declaration
     '''
     if len(p) == 2:
-    	p[0] = p[1]
+    	p[0] = node.Node("DECLARATION_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = node.Node('DCLR_LIST', None, p.lineno(1), [p[1], p[2]])
+    	p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # statement-list
@@ -700,9 +796,10 @@ def p_statement_list(p):
                        | statement_list statement
     '''
     if len(p) == 2:
-    	p[0] = p[1]
+    	p[0] = node.Node("STMT_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = node.Node('STMT_LIST', None, p.lineno(1), [p[1], p[2]])
+    	p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # expression-statement
@@ -777,9 +874,10 @@ def p_translation_unit(p):
                          | translation_unit external_declaration
     '''
     if len(p) == 2:
-    	p[0] = p[1]
+    	p[0] = node.Node("TRSL_UNIT", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = node.Node('TRSL_UNIT', None, p.lineno(1), [p[1], p[2]])
+    	p[0] = p[1]
+        p[0].add_child(p[2])
 
 
 # external-declaration
