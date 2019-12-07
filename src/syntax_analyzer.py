@@ -10,11 +10,19 @@ import ply.yacc as yacc
 import node
 
 
+class SyntaxAnalyzerError(Exception):
+    pass
+
+
+class UnsupFeatureError(SyntaxAnalyzerError):
+    pass
+
+
 # Get the token map
 tokens = lexical_analyzer.tokens
 
 # Starting grammar rule
-start = 'expression'
+start = 'statement'
 
 
 # constant
@@ -24,7 +32,7 @@ def p_constant(p):
                  | FCONST
                  | CCONST
     '''
-    pass
+    p[0] = ast.Const(p.slice[1].type, p[1], p.lineno(1))
 
 
 # primary-expression
@@ -35,7 +43,17 @@ def p_primary_expression(p):
                            | STR_LITER
                            | LPAREN expression RPAREN
     '''
-    pass
+    if len(p) == 2:
+        if p.slice[1].type == 'ID':
+            p[0] = ast.ID(p[1], p.lineno(1))
+        elif isinstance(p[1], ast.Const):
+            p[0] = p[1]
+        else:
+            p[0] = ast.Const(p.slice[1].type, p[1], p.lineno(1))
+    elif len(p) == 4:
+        p[0] = p[2]
+    else:
+        raise SyntaxAnalyzerError
 
 
 # postfix-expression
@@ -49,7 +67,26 @@ def p_postfix_expression(p):
                            | postfix_expression INCREMENT
                            | postfix_expression DECREMENT
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 5:
+        if p[2] == '[' and p[4] == ']':
+            p[0] = ast.Subscript(p[1], p[3], p.lineno(2))
+        elif p[2] == '(' and p[4] == ')':
+            ast.FunCall(p[1], p[3], p.lineno(2))
+        else:
+            raise SyntaxAnalyzerError
+    elif len(p) == 4:
+        raise UnsupFeatureError
+    elif len(p) == 3:
+        if p[2] == '++':
+            p[0] = ast.UnaOp(ast.ArithOp.POS_INC, p[1], p.lineno(2))
+        elif p[2] == '--':
+            p[0] = ast.UnaOp(ast.ArithOp.POS_DEC, p[1], p.lineno(2))
+        else:
+            raise SyntaxAnalyzerError
+    else:
+        raise SyntaxAnalyzerError
 
 
 # argument-expression-list:
@@ -58,7 +95,12 @@ def p_argument_expression_list(p):
         argument_expression_list : assignment_expression
                                  | argument_expression_list COMMA assignment_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.Args(p[1], p[3], p.lineno(3))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # unary-expression
@@ -71,7 +113,22 @@ def p_unary_expression(p):
                          | SIZEOF unary_expression
                          | SIZEOF LPAREN type_name RPAREN
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        if p[1] == '++':
+            p[0] = ast.UnaOp(ast.ArithOp.PRE_INC, p[2], p.lineno(2))
+        elif p[1] == '--':
+            p[0] = ast.UnaOp(ast.ArithOp.PRE_DEC, p[2], p.lineno(2))
+        elif p[1] == 'sizeof':
+            p[0] = ast.UnaOp(ast.Operator.SIZEOF, p[2], p.lineno(1))
+        else:
+            p[0] = ast.UnaOp(p[1], p[2], p.lineno(1))
+    elif len(p) == 5:
+        # ??? UnsupFeatureError?
+        p[0] = ast.UnaOp(ast.Operator.SIZEOF, p[3], p.lineno(1))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # unary-operator
@@ -84,7 +141,18 @@ def p_unary_operator(p):
                        | B_NOT
                        | L_NOT
     '''
-    pass
+    if p[1] == '&':
+        p[0] = ast.MemPoinOp.ADDRS
+    elif p[1] == '*':
+        p[0] = ast.MemPoinOp.INDIR
+    elif p[1] == '+':
+        p[0] = ast.ArithOp.UNA_PLUS
+    elif p[1] == '-':
+        p[0] = ast.ArithOp.UNA_MINUS
+    elif p[1] == '~':
+        p[0] = ast.BitwiseOp.B_NOT
+    else:
+        p[0] = ast.LogicalOp.L_NOT
 
 
 # cast-expression
@@ -93,7 +161,12 @@ def p_cast_expression(p):
         cast_expression : unary_expression
                         | LPAREN type_name RPAREN cast_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 5:
+        p[0] = ast.Cast(p[2], p[4], p.lineno(1))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # multiplicative-expression
@@ -104,7 +177,19 @@ def p_multiplicative_expression(p):
                                   | multiplicative_expression DIV cast_expression
                                   | multiplicative_expression MOD cast_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        if p[2] == '*':
+            p[0] = ast.BinOp(p[1], ast.ArithOp.MUL , p[3], p.lineno(2))
+        elif p[2] == '/':
+            p[0] = ast.BinOp(p[1], ast.ArithOp.DIV , p[3], p.lineno(2))
+        elif p[2] == '%':
+            p[0] = ast.BinOp(p[1], ast.ArithOp.MOD , p[3], p.lineno(2))
+        else:
+            raise SyntaxAnalyzerError
+    else:
+        raise SyntaxAnalyzerError
 
 
 # additive-expression
@@ -114,7 +199,17 @@ def p_additive_expression(p):
                             | additive_expression PLUS multiplicative_expression
                             | additive_expression MINUS multiplicative_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        if p[2] == '+':
+            p[0] = ast.BinOp(p[1], ast.ArithOp.ADD, p[3], p.lineno(2))
+        elif p[2] == '-':
+            p[0] = ast.BinOp(p[1], ast.ArithOp.SUB, p[3], p.lineno(2))
+        else:
+            raise SyntaxAnalyzerError
+    else:
+        raise SyntaxAnalyzerError
 
 
 # shift-expression
@@ -124,7 +219,17 @@ def p_shift_expression(p):
                          | shift_expression B_LSHIFT additive_expression
                          | shift_expression B_RSHIFT additive_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        if p[2] == '<<':
+            p[0] = ast.BinOp(p[1], ast.BitwiseOp.B_LSHIFT, p[3], p.lineno(2))
+        elif p[2] == '>>':
+            p[0] = ast.BinOp(p[1], ast.BitwiseOp.B_RSHIFT, p[3], p.lineno(2))
+        else:
+            raise SyntaxAnalyzerError
+    else:
+        raise SyntaxAnalyzerError
 
 
 # relational-expression
@@ -136,7 +241,21 @@ def p_relational_expression(p):
                               | relational_expression LE shift_expression
                               | relational_expression GE shift_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        if p[2] == '<':
+            p[0] = ast.BinOp(p[1], ast.ComRelOp.LT, p[3], p.lineno(2))
+        elif p[2] == '>':
+            p[0] = ast.BinOp(p[1], ast.ComRelOp.GT, p[3], p.lineno(2))
+        elif p[2] == '<=':
+            p[0] = ast.BinOp(p[1], ast.ComRelOp.LE, p[3], p.lineno(2))
+        elif p[2] == '>=':
+            p[0] = ast.BinOp(p[1], ast.ComRelOp.GE, p[3], p.lineno(2))
+        else:
+            raise SyntaxAnalyzerError
+    else:
+        raise SyntaxAnalyzerError
 
 
 # equality-expression
@@ -146,7 +265,17 @@ def p_equality_expression(p):
                             | equality_expression EQ relational_expression
                             | equality_expression NE relational_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        if p[2] == '==':
+            p[0] = ast.BinOp(p[1], ast.ComRelOp.EQ, p[3], p.lineno(2))
+        elif p[2] == '!=':
+            p[0] = ast.BinOp(p[1], ast.ComRelOp.NE, p[3], p.lineno(2))
+        else:
+            raise SyntaxAnalyzerError
+    else:
+        raise SyntaxAnalyzerError
 
 
 # AND-expression
@@ -155,7 +284,12 @@ def p_AND_expression(p):
         AND_expression : equality_expression
                        | AND_expression AMPERSAND equality_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.BinOp(p[1], ast.BitwiseOp.B_AND, p[3], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # exclusive-OR-expression
@@ -164,7 +298,12 @@ def p_exclusive_OR_expression(p):
         exclusive_OR_expression : AND_expression
                                 | exclusive_OR_expression B_XOR AND_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.BinOp(p[1], ast.BitwiseOp.B_XOR, p[3], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # inclusive-OR-expression
@@ -173,7 +312,12 @@ def p_inclusive_OR_expression(p):
         inclusive_OR_expression : exclusive_OR_expression
                                 | inclusive_OR_expression B_OR exclusive_OR_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.BinOp(p[1], ast.BitwiseOp.B_OR, p[3], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # logical-and-expression
@@ -182,7 +326,12 @@ def p_logical_AND_expression(p):
         logical_AND_expression : inclusive_OR_expression
                                | logical_AND_expression L_AND inclusive_OR_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.BinOp(p[1], ast.LogicalOp.L_AND, p[3], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # logical-or-expression
@@ -191,7 +340,12 @@ def p_logical_OR_expression(p):
         logical_OR_expression : logical_AND_expression
                               | logical_OR_expression L_OR logical_AND_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.BinOp(p[1], ast.LogicalOp.L_OR, p[3], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # conditional-expression
@@ -200,7 +354,12 @@ def p_conditional_expression(p):
         conditional_expression : logical_OR_expression
                                | logical_OR_expression TERNARY expression COLON conditional_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 6:
+        p[0] = ast.TerOp(p[1], p[3], p[5], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # assignment-expression
@@ -209,7 +368,12 @@ def p_assignment_expression(p):
         assignment_expression : conditional_expression
                               | unary_expression assignment_operator assignment_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.Assign(p[1], p[2], p[3], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # assignment-operator
@@ -227,7 +391,30 @@ def p_assignment_operator(p):
                             | B_XOR_ASSIGN
                             | B_OR_ASSIGN
     '''
-    pass
+    if p[1] == '=':
+        p[0] = ast.AssignOp.ASSIGN
+    elif p[1] == '*=':
+        p[0] = ast.AssignOp.MUL_ASSIGN
+    elif p[1] == '/=':
+        p[0] = ast.AssignOp.DIV_ASSIGN
+    elif p[1] == '%=':
+        p[0] = ast.AssignOp.MOD_ASSIGN
+    elif p[1] == '+=':
+        p[0] = ast.AssignOp.ADD_ASSIGN
+    elif p[1] == '-=':
+        p[0] = ast.AssignOp.SUB_ASSIGN
+    elif p[1] == '<<=':
+        p[0] = ast.AssignOp.B_LSHIFT_ASSIGN
+    elif p[1] == '>>=':
+        p[0] = ast.AssignOp.B_RSHIFT_ASSIGN
+    elif p[1] == '&=':
+        p[0] = ast.AssignOp.B_AND_ASSIGN
+    elif p[1] == '^=':
+        p[0] = ast.AssignOp.B_XOR_ASSIGN
+    elif p[1] == '|=':
+        p[0] = ast.AssignOp.B_OR_ASSIGN
+    else:
+        raise SyntaxAnalyzerError
 
 
 # expression
@@ -236,13 +423,18 @@ def p_expression(p):
         expression : assignment_expression
                    | expression COMMA assignment_expression
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = ast.Expr(p[1], p[3], p.lineno(3))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # constant-expression
 def p_constant_expression(p):
     'constant_expression : conditional_expression'
-    pass
+    p[0] = p[1]
 
 
 # declaration
