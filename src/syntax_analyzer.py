@@ -4,10 +4,9 @@
 # A syntax analyzer for ANSI C (C89 / C90). Based on ANSI/ISO 9899-1990
 # -----------------------------------------------------------------------------
 
-import sys
 import lexical_analyzer
 import ply.yacc as yacc
-import node
+import ast
 
 
 class SyntaxAnalyzerError(Exception):
@@ -759,7 +758,8 @@ def p_statement(p):
                   | iteration_statement
                   | jump_statement
     '''
-    pass
+    p[0] = p[1]
+    print(p[0])
 
 
 # labeled-statement
@@ -769,18 +769,40 @@ def p_labeled_statement(p):
                           | CASE constant_expression COLON statement
                           | DEFAULT COLON statement
     '''
-    pass
+    if p.slice[1].type == 'ID':
+        raise UnsupFeatureError
+    elif p[1] == 'case':
+        p[0] = ast.Case(p[2], p[4], p.lineno(1))
+    elif p[1] == 'default':
+        p[0] = ast.Default(p[3], p.lineno(1))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # compound-statement
 def p_compound_statement(p):
     '''
-        compound_statement : LBRACE RBRACE
-                           | LBRACE declaration_list RBRACE
-                           | LBRACE statement_list RBRACE
-                           | LBRACE declaration_list statement_list RBRACE
+        compound_statement : LBRACE declaration_list_opt statement_list_opt RBRACE
     '''
-    pass
+    p[0] = ast.CompStmt(p[2], p[3], p.lineno(1))
+
+
+# declaration-list_opt
+def p_declaration_list_opt(p):
+    '''
+        declaration_list_opt : declaration_list
+                             | empty
+    '''
+    p[0] = p[1]
+
+
+# statement-list_opt
+def p_statementn_list_opt(p):
+    '''
+        statement_list_opt : statement_list
+                           | empty
+    '''
+    p[0] = p[1]
 
 
 # declaration-list
@@ -789,7 +811,12 @@ def p_declaration_list(p):
         declaration_list : declaration
                          | declaration_list declaration
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = ast.DeclList(p[1], p[2], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # statement-list
@@ -798,16 +825,29 @@ def p_statement_list(p):
         statement_list : statement
                        | statement_list statement
     '''
-    pass
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = ast.StmtList(p[1], p[2], p.lineno(2))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # expression-statement
 def p_expression_statement(p):
     '''
-        expression_statement : SEMI_COLON
-                             | expression SEMI_COLON
+        expression_statement : expression_opt SEMI_COLON
     '''
-    pass
+    p[0] = p[1]
+
+
+# expression_opt
+def p_expression_opt(p):
+    '''
+        expression_opt : expression
+                       | empty
+    '''
+    p[0] = p[1]
 
 
 # selection-statement
@@ -817,7 +857,17 @@ def p_selection_statement(p):
                             | IF LPAREN expression RPAREN statement ELSE statement
                             | SWITCH LPAREN expression RPAREN statement
     '''
-    pass
+    if p[1] == 'if':
+        if len(p) == 6:
+            p[0] = ast.If(p[3], p[5], p.lineno(1))
+        elif len(p) == 8:
+            p[0] = ast.IfElse(p[3], p[5], p[7], p.lineno(1))
+        else:
+            raise SyntaxAnalyzerError
+    elif p[1] == 'switch':
+        p[0] = ast.Switch(p[3], p[5], p.lineno(1))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # iteration_statement
@@ -827,7 +877,14 @@ def p_iteration_statement(p):
                             | DO statement WHILE LPAREN expression RPAREN SEMI_COLON
                             | FOR LPAREN expression_opt SEMI_COLON expression_opt SEMI_COLON expression_opt RPAREN statement
     '''
-    pass
+    if p[1] == 'while':
+        p[0] = ast.While(p[3], p[5], p.lineno(1))
+    elif p[1] == 'do':
+        p[0] = ast.DoWhile(p[2], p[5], p.lineno(1))
+    elif p[1] == 'for':
+        p[0] = ast.For(p[3], p[5], p[7], p[9], p.lineno(1))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # jump_statement
@@ -836,10 +893,21 @@ def p_jump_statement(p):
         jump_statement : GOTO ID SEMI_COLON
                        | CONTINUE SEMI_COLON
                        | BREAK SEMI_COLON
-                       | RETURN SEMI_COLON
-                       | RETURN expression SEMI_COLON
+                       | RETURN expression_opt SEMI_COLON
     '''
-    pass
+    if p[1] == 'goto':
+        p[0] = ast.Goto(p[2], p.lineno(1))
+    elif p[1] == 'continue':
+        p[0] = ast.Continue(p.lineno(1))
+    elif p[1] == 'break':
+        p[0] = ast.Break(p.lineno(1))
+    elif p[1] == 'return':
+        if p[2] == None:
+            p[0] = ast.Return(ast.Type.VOID, p.lineno(1))
+        else:
+            p[0] = ast.Return(p[2], p.lineno(1))
+    else:
+        raise SyntaxAnalyzerError
 
 
 # translation-unit
@@ -873,21 +941,13 @@ def p_function_definition(p):
 
 # empty
 def p_empty(p):
-    'empty : '
-    pass
-
-
-# opts
-def p_expression_opt(p):
-    '''
-        expression_opt : expression
-                       | empty
-    '''
-    pass
+    'empty :'
+    p[0] = None
 
 
 def p_error(p):
     print("Whoa. We're hosed")
+    print("lineno: %d, pos: %d" % (p.lineno, p.lexpos))
 
 
 import profile
