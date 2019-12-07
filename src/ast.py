@@ -75,3 +75,125 @@ class MemPoinOp(enum.Enum):
     ADDRS = 1
     DEREF = 2
     REFEN = 3
+
+
+class Node(object):
+    pass
+
+
+class Const(Node):
+    def __init__(self, type, value, lineno):
+        self.type = type
+        self.value = value
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<%s, %s>' % (self.type, self.value)
+
+
+class ID(Node):
+    def __init__(self, id, lineno):
+        self.id = id
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<ID, %s>' % self.id
+
+
+class Subscript(Node):
+    def __init__(self, id, index, lineno):
+        self.id = id
+        self.index = index
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<%s[%s]>' % (self.id, self.index)
+
+
+class FunCall(Node):
+    def __init__(self, id, args, lineno):
+        self.id = id
+        self.args = args
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<%s(%s)>' % (self.id, self.args)
+
+
+class Args(Node):
+    def __init__(self, args, arg, lineno):
+        self.args = args
+        self.arg = arg
+        self.lineno = lineno
+
+    def __repr__(self):
+        if self.args == None:
+            return '%s' % self.arg
+        else:
+            return '%s, %s' % (self.args, self.arg)
+
+
+class UnaOp(Node):
+    def __init__(self, operator, operand, lineno):
+        self.operator = operator
+        self.operand = operand
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<%s(%s)>' % (self.operator, self.operand)
+
+
+class BinOp(Node):
+    def __init__(self, left, op, right, lineno):
+        self.op = op
+        self.left = left
+        self.right = right
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<%s(%s, %s)>' % (self.op, self.left, self.right)
+
+
+class TerOp(Node):
+    def __init__(self, condition, then_body, else_body, lineno):
+        self.condition = condition
+        self.then_body = then_body
+        self.else_body = else_body
+        self.linno = lineno
+
+    def __repr__(self):
+        return '<%s ? %s : %s>' % (self.condition, self.then_body, self.else_body)
+
+
+class Assign(Node):
+    def __init__(self, dst, op, src, lineno):
+        self.op = op
+        self.dst = dst
+        self.src = src
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<%s(%s, %s)>' % (self.op, self.dst, self.src)
+
+
+class Cast(Node):
+    def __init__(self, type, expr, lineno):
+        self.type = type
+        self.expr = expr
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<CAST(%s, %s)>' % (self.type, self.expr)
+
+
+class Expr(Node):
+    def __init__(self, expr, assign_expr, lineno):
+        self.expr = expr
+        self.assign_expr = assign_expr
+        self.lineno = lineno
+
+    def __repr__(self):
+        if self.expr == None:
+            return '%s' % self.assign_expr
+        else:
+            return '%s, %s' % (self.expr, self.assign_expr)
