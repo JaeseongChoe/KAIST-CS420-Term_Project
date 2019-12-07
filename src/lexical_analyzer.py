@@ -1,178 +1,229 @@
 # ----------------------------------------------------------------------
 # lexical_analyzer.py
 #
-# A lexical analyzer for ANSI C.
+# A lexical analyzer for ANSI C (C89 / C90).
 # ----------------------------------------------------------------------
 
 import sys
 sys.path.insert(0, "../lib")
 
 import ply.lex as lex
+from ply.lex import TOKEN
 
-# Reserved words
-reserved = (
-    'AUTO', 'BREAK', 'CASE', 'CHAR', 'CONST', 'CONTINUE', 'DEFAULT', 'DO', 'DOUBLE',
-    'ELSE', 'ENUM', 'EXTERN', 'FLOAT', 'FOR', 'GOTO', 'IF', 'INT', 'LONG', 'REGISTER',
-    'RETURN', 'SHORT', 'SIGNED', 'SIZEOF', 'STATIC', 'STRUCT', 'SWITCH', 'TYPEDEF',
-    'UNION', 'UNSIGNED', 'VOID', 'VOLATILE', 'WHILE',
+
+# Keywords
+keyword = (
+    'AUTO', 'BREAK', 'CASE', 'CHAR', 'CONST', 'CONTINUE', 'DEFAULT', 'DO',
+    'DOUBLE', 'ELSE', 'ENUM', 'EXTERN', 'FLOAT', 'FOR', 'GOTO', 'IF',
+    'INT', 'LONG', 'REGISTER', 'RETURN', 'SHORT', 'SIGNED', 'SIZEOF', 'STATIC',
+    'STRUCT', 'SWITCH', 'TYPEDEF', 'UNION', 'UNSIGNED', 'VOID', 'VOLATILE', 'WHILE',
 )
 
-tokens = reserved + (
-    # Literals (identifier, integer constant, float constant, string constant,
-    # char const)
-    'ID', 'TYPEID', 'ICONST', 'FCONST', 'SCONST', 'CCONST',
-
-    # Operators (+,-,*,/,%,|,&,~,^,<<,>>, ||, &&, !, <, <=, >, >=, ==, !=)
-    'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD',
-    'OR', 'AND', 'NOT', 'XOR', 'LSHIFT', 'RSHIFT',
-    'LOR', 'LAND', 'LNOT',
-    'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
-
-    # Assignment (=, *=, /=, %=, +=, -=, <<=, >>=, &=, ^=, |=)
-    'EQUALS', 'TIMESEQUAL', 'DIVEQUAL', 'MODEQUAL', 'PLUSEQUAL', 'MINUSEQUAL',
-    'LSHIFTEQUAL', 'RSHIFTEQUAL', 'ANDEQUAL', 'XOREQUAL', 'OREQUAL',
-
-    # Increment/decrement (++,--)
-    'PLUSPLUS', 'MINUSMINUS',
-
-    # Structure dereference (->)
-    'ARROW',
-
-    # Conditional operator (?)
-    'CONDOP',
-
-    # Delimeters ( ) [ ] { } , . ; :
-    'LPAREN', 'RPAREN',
-    'LBRACKET', 'RBRACKET',
-    'LBRACE', 'RBRACE',
-    'COMMA', 'PERIOD', 'SEMI', 'COLON',
-
-    # Ellipsis (...)
-    'ELLIPSIS',
+# Constants
+constant = (
+    'FCONST',        # floating-constant
+    'ICONST',        # integer-constant
+    'ECONST',        # enumeration-constant
+    'CCONST',        # character-constant
 )
 
-# Completely ignored characters
-t_ignore = ' \t\x0c'
-
-# Newlines
-
-
-def t_NEWLINE(t):
-    r'\n+'
-    t.lexer.lineno += t.value.count("\n")
+# String Literals
+string_literals = ('STR_LITER',)
 
 # Operators
+operator = (
+    # Arithmetic operators (+, -, *, /, %, ++, --)
+    'PLUS', 'MINUS', 'ASTERISK', 'DIV', 'MOD',
+    'INCREMENT', 'DECREMENT',
+
+    # Comparison operators (==, !=, <, >, <=, >=, !, &&, ||)
+    'EQ', 'NE', 'LT', 'GT', 'LE', 'GE',
+
+    # Logical operators
+    'L_NOT', 'L_AND', 'L_OR',
+
+    # Bitwise operators (~, &, |, ^, <<, >>)
+    'B_NOT', 'AMPERSAND', 'B_OR', 'B_XOR', 'B_LSHIFT', 'B_RSHIFT',
+
+    # Assignment operators (=, +=, -=, *=, /=, %=, &=, ^=, |=, <<=, >>=)
+    'ASSIGN',
+    'ADD_ASSIGN', 'SUB_ASSIGN', 'MUL_ASSIGN', 'DIV_ASSIGN', 'MOD_ASSIGN',
+    'B_AND_ASSIGN', 'B_XOR_ASSIGN', 'B_OR_ASSIGN',
+    'B_LSHIFT_ASSIGN', 'B_RSHIFT_ASSIGN',
+
+    # Member and pointer operators (., ->)
+    'PERIOD', 'ARROW',
+
+    # Other operators (?, :, ,, sizeof)
+    'TERNARY', 'COLON',
+    'COMMA',
+)
+
+# Punctuators
+punctuator = (
+    'LBRACKET', 'RBRACKET',        # [, ]
+    'LPAREN', 'RPAREN',            # (, )
+    'LBRACE', 'RBRACE',            # {, }
+    'SEMI_COLON',                  # ;
+    'ELLIPSIS',                    # ...
+)
+
+# Tokens
+tokens = keyword + constant + string_literals + operator + punctuator + (
+    'ID', 'TYPEID',
+    'SCONST',
+)
+
+# Keywords
+keyword_map = {}
+for k in keyword:
+    keyword_map[k.lower()] = k
+
+
+# Constants
+def t_CCONST(t):
+    r"""
+        L?
+        \'
+        (
+            [^\'\\\n]
+            | \\[\'\"\?\\abfnrtv]
+            | \\[0-7]{1,3}
+            | \\x[0-9a-fA-f]+
+        )+
+        \'
+     """
+    return t
+
+
+def t_FCONST(t):
+    r'(\d*\.\d+) ((e|E)(\+|-)?\d+)? (f|l|F|L)?'
+    return t
+
+
+def t_ICONST(t):
+    r"""
+        ([1-9]\d* ([uU][lL]? | [lL][uU]?)?)
+        | (0[0-7]* ([uU][lL]? | [lL][uU]?)?)
+        | (0(x|X) [0-9a-fA-F]+ ([uU][lL]? | [lL][uU]?))
+     """
+    return t
+
+
+# String Literals
+def t_STR_LITER(t):
+    r"""
+        L?
+        \"
+        (
+            (
+                [^\"\\\n]
+                | \\[\'\"\?\\abfnrtv]
+                | \\[0-7]{1,3}
+                | \\x[0-9a-fA-f]+
+            )+
+        )*
+        \"
+     """
+    return t
+
+
+# Arithmetic operators
 t_PLUS = r'\+'
 t_MINUS = r'-'
-t_TIMES = r'\*'
-t_DIVIDE = r'/'
+t_ASTERISK = r'\*'
+t_DIV = r'/'
 t_MOD = r'%'
-t_OR = r'\|'
-t_AND = r'&'
-t_NOT = r'~'
-t_XOR = r'\^'
-t_LSHIFT = r'<<'
-t_RSHIFT = r'>>'
-t_LOR = r'\|\|'
-t_LAND = r'&&'
-t_LNOT = r'!'
+t_INCREMENT = r'\+\+'
+t_DECREMENT = r'--'
+
+# Comparion operators
+t_EQ = r'=='
+t_NE = r'!='
 t_LT = r'<'
 t_GT = r'>'
 t_LE = r'<='
 t_GE = r'>='
-t_EQ = r'=='
-t_NE = r'!='
+
+# Logical operators
+t_L_NOT = r'!'
+t_L_AND = r'&&'
+t_L_OR = r'\|\|'
+
+# Bitwise operators
+t_B_NOT = r'~'
+t_AMPERSAND = r'&'
+t_B_OR = r'\|'
+t_B_XOR = r'\^'
+t_B_LSHIFT = r'<<'
+t_B_RSHIFT = r'>>'
 
 # Assignment operators
+t_ASSIGN = r'='
+t_ADD_ASSIGN = r'\+='
+t_SUB_ASSIGN = r'-='
+t_MUL_ASSIGN = r'\*='
+t_DIV_ASSIGN = r'/='
+t_MOD_ASSIGN = r'%='
+t_B_AND_ASSIGN = r'&='
+t_B_OR_ASSIGN = r'\|='
+t_B_XOR_ASSIGN = r'\^='
+t_B_LSHIFT_ASSIGN = r'<<='
+t_B_RSHIFT_ASSIGN = r'>>='
 
-t_EQUALS = r'='
-t_TIMESEQUAL = r'\*='
-t_DIVEQUAL = r'/='
-t_MODEQUAL = r'%='
-t_PLUSEQUAL = r'\+='
-t_MINUSEQUAL = r'-='
-t_LSHIFTEQUAL = r'<<='
-t_RSHIFTEQUAL = r'>>='
-t_ANDEQUAL = r'&='
-t_OREQUAL = r'\|='
-t_XOREQUAL = r'\^='
-
-# Increment/decrement
-t_PLUSPLUS = r'\+\+'
-t_MINUSMINUS = r'--'
-
-# ->
+# Member and pointer operators
+t_PERIOD = r'\.'
 t_ARROW = r'->'
 
-# ?
-t_CONDOP = r'\?'
+# Other operators
+t_TERNARY = r'\?'
+t_COLON = r':'
+t_COMMA = r','
 
-# Delimeters
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
+# Punctuators
 t_LBRACKET = r'\['
 t_RBRACKET = r'\]'
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
 t_LBRACE = r'\{'
 t_RBRACE = r'\}'
-t_COMMA = r','
-t_PERIOD = r'\.'
-t_SEMI = r';'
-t_COLON = r':'
+t_SEMI_COLON = r';'
 t_ELLIPSIS = r'\.\.\.'
 
-# Identifiers and reserved words
-
-reserved_map = {}
-for r in reserved:
-    reserved_map[r.lower()] = r
+# Completely ignored characters
+t_ignore = ' \t\x0c'
 
 
+# Identifier
 def t_ID(t):
     r'[A-Za-z_][\w_]*'
-    t.type = reserved_map.get(t.value, "ID")
+    t.type = keyword_map.get(t.value, "ID")
     return t
 
-# Integer literal
-def t_ICONST(t):
-    r'\d+([uU]|[lL]|[uU][lL]|[lL][uU])?'
-    t.value = ("ICONST", (t.lexer.lineno, t.lexer.lineno), t.value)
-    return t
 
-# Floating literal
-def t_FCONST(t):
-    r'((\d+)(\.\d+)(e(\+|-)?(\d+))? | (\d+)e(\+|-)?(\d+))([lL]|[fF])?'
-    t.value = ("FCONST", (t.lexer.lineno, t.lexer.lineno), t.value)
-    return t
+# Newlines
+def t_NEWLINE(t):
+    r'\n+'
+    t.lexer.lineno += t.value.count("\n")
 
-# String literal
-def t_SCONST(t):
-    r'\"([^\\\n]|(\\.))*?\"'
-    t.value = ("SCONST", (t.lexer.lineno, t.lexer.lineno), t.value)
-    return t
-
-# Character constant 'c' or L'c'
-def t_CCONST(t):
-    r'(L)?\'([^\\\n]|(\\.))*?\''
-    t.value = ("CCONST", (t.lexer.lineno, t.lexer.lineno), t.value)
 
 # Comments
-
-
 def t_comment(t):
     r'/\*(.|\n)*?\*/'
     t.lexer.lineno += t.value.count('\n')
 
+
 # Preprocessor directive (ignored)
-
-
 def t_preprocessor(t):
     r'\#(.)*?\n'
     t.lexer.lineno += 1
 
 
+# Error handling
 def t_error(t):
     print("Illegal character %s" % repr(t.value[0]))
     t.lexer.skip(1)
+
 
 lexical_analyzer = lex.lex()
 if __name__ == "__main__":

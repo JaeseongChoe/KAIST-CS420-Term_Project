@@ -1,1245 +1,954 @@
 # -----------------------------------------------------------------------------
 # syntax_analyzer.py
 #
-# A syntax analyzer for ANSI C.  Based on the grammar in K&R, 2nd Ed.
+# A syntax analyzer for ANSI C (C89 / C90). Based on ANSI/ISO 9899-1990
 # -----------------------------------------------------------------------------
 
 import sys
 import lexical_analyzer
 import ply.yacc as yacc
-from node import Node
+import node
+
 
 # Get the token map
 tokens = lexical_analyzer.tokens
 
-# modify token to node
-def to_node(node_list):
-    result = []
-    for item in node_list:
-        if isinstance(item, Node):
-            result.append(item)
-        elif isinstance(item, str):
-            result.append(Node(item, (None, None), None))
+# Starting grammar rule
+start = 'translation_unit'
+
+
+# constant
+def p_constant(p):
+    '''
+        constant : ICONST
+                 | FCONST
+                 | CCONST
+    '''
+    p[0] = node.Node(p.slice[1].type, p[1], p.lineno(1))
+
+
+# primary-expression
+def p_primary_expression(p):
+    '''
+        primary_expression : ID
+                           | constant
+                           | STR_LITER
+                           | LPAREN expression RPAREN
+    '''
+    if len(p) == 2:
+        if isinstance(p[1], node.Node):
+            p[0] = p[1]
         else:
-            result.append(Node((item[0], (item[2], item[2]), item[1])))
-    return result
+            p[0] = node.Node(p.slice[1].type, p[1], p.lineno(1))
+    else:
+        p[0] = p[2]
 
-def union_line_range(token):
-    begin = None
-    end = None
-    for item in token[1:]:
-        if item.data[1][0] is not None:
-            begin = item.data[1][0]
-            break
-    for item in reversed(token[1:]):
-        if item.data[1][1] is not None:
-            end = item.data[1][1]
-            break
-    return begin, end
-# translation-unit:
 
-
-def p_translation_unit_1(t):
-    'translation_unit : external_declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("translation_unit", union_line_range(children)), children)
-
-
-def p_translation_unit_2(t):
-    'translation_unit : translation_unit external_declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("translation_unit", union_line_range(children)), children)
-
-
-# external-declaration:
-
-
-def p_external_declaration_1(t):
-    'external_declaration : function_definition'
-    children = to_node(t[1:])
-    t[0] = Node(("external_declaration", union_line_range(children)), children)
-
-
-def p_external_declaration_2(t):
-    'external_declaration : declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("external_declaration", union_line_range(children)), children)
-
-
-# function-definition:
-
-
-def p_function_definition_1(t):
-    'function_definition : declaration_specifiers declarator declaration_list compound_statement'
-    children = to_node(t[1:])
-    t[0] = Node(("function_definition", union_line_range(children)), children)
-
-
-def p_function_definition_2(t):
-    'function_definition : declarator declaration_list compound_statement'
-    children = to_node(t[1:])
-    t[0] = Node(("function_definition", union_line_range(children)), children)
-
-
-def p_function_definition_3(t):
-    'function_definition : declarator compound_statement'
-    children = to_node(t[1:])
-    t[0] = Node(("function_definition", union_line_range(children)), children)
-
-
-def p_function_definition_4(t):
-    'function_definition : declaration_specifiers declarator compound_statement'
-    children = to_node(t[1:])
-    t[0] = Node(("function_definition", union_line_range(children)), children)
-
-# declaration:
-
-
-def p_declaration_1(t):
-    'declaration : declaration_specifiers init_declarator_list SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration", union_line_range(children)), children)
-
-
-def p_declaration_2(t):
-    'declaration : declaration_specifiers SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration", union_line_range(children)), children)
-
-# declaration-list:
-
-
-def p_declaration_list_1(t):
-    'declaration_list : declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_list", union_line_range(children)), children)
-
-
-def p_declaration_list_2(t):
-    'declaration_list : declaration_list declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_list", union_line_range(children)), children)
-
-# declaration-specifiers
-
-
-def p_declaration_specifiers_1(t):
-    'declaration_specifiers : storage_class_specifier declaration_specifiers'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_specifiers", union_line_range(children)), children)
-
-
-def p_declaration_specifiers_2(t):
-    'declaration_specifiers : type_specifier declaration_specifiers'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_specifiers", union_line_range(children)), children)
-
-
-def p_declaration_specifiers_3(t):
-    'declaration_specifiers : type_qualifier declaration_specifiers'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_specifiers", union_line_range(children)), children)
-
-
-def p_declaration_specifiers_4(t):
-    'declaration_specifiers : storage_class_specifier'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_specifiers", union_line_range(children)), children)
-
-
-def p_declaration_specifiers_5(t):
-    'declaration_specifiers : type_specifier'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_specifiers", union_line_range(children)), children)
-
-
-def p_declaration_specifiers_6(t):
-    'declaration_specifiers : type_qualifier'
-    children = to_node(t[1:])
-    t[0] = Node(("declaration_specifiers", union_line_range(children)), children)
-
-# storage-class-specifier
-
-
-def p_storage_class_specifier(t):
-    '''storage_class_specifier : AUTO
-                               | REGISTER
-                               | STATIC
-                               | EXTERN
-                               | TYPEDEF
-                               '''
-    children = to_node(t[1:])
-    t[0] = Node(("storage_class_specifier", union_line_range(children)), children)
-
-# type-specifier:
-
-
-def p_type_specifier(t):
-    '''type_specifier : VOID
-                      | CHAR
-                      | SHORT
-                      | INT
-                      | LONG
-                      | FLOAT
-                      | DOUBLE
-                      | SIGNED
-                      | UNSIGNED
-                      | struct_or_union_specifier
-                      | enum_specifier
-                      | TYPEID
-                      '''
-
-    children = to_node(t[1:])
-    t[0] = Node(("type_specifier", union_line_range(children)), children)
-
-# type-qualifier:
-
-
-def p_type_qualifier(t):
-    '''type_qualifier : CONST
-                      | VOLATILE'''
-
-    children = to_node(t[1:])
-    t[0] = Node(("type_qualifier", union_line_range(children)), children)
-
-# struct-or-union-specifier
-
-
-def p_struct_or_union_specifier_1(t):
-    'struct_or_union_specifier : struct_or_union ID LBRACE struct_declaration_list RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_or_union_specifier", union_line_range(children)), children)
-
-
-def p_struct_or_union_specifier_2(t):
-    'struct_or_union_specifier : struct_or_union LBRACE struct_declaration_list RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_or_union_specifier", union_line_range(children)), children)
-
-
-def p_struct_or_union_specifier_3(t):
-    'struct_or_union_specifier : struct_or_union ID'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_or_union_specifier", union_line_range(children)), children)
-
-# struct-or-union:
-
-
-def p_struct_or_union(t):
-    '''struct_or_union : STRUCT
-                       | UNION
-                       '''
-    children = to_node(t[1:])
-    t[0] = Node(("struct_or_union", union_line_range(children)), children)
-
-# struct-declaration-list:
-
-
-def p_struct_declaration_list_1(t):
-    'struct_declaration_list : struct_declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declaration_list", union_line_range(children)), children)
-
-
-def p_struct_declaration_list_2(t):
-    'struct_declaration_list : struct_declaration_list struct_declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declaration_list", union_line_range(children)), children)
-
-# init-declarator-list:
-
-
-def p_init_declarator_list_1(t):
-    'init_declarator_list : init_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("init_declarator_list", union_line_range(children)), children)
-
-
-def p_init_declarator_list_2(t):
-    'init_declarator_list : init_declarator_list COMMA init_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("init_declarator_list", union_line_range(children)), children)
-
-# init-declarator
-
-
-def p_init_declarator_1(t):
-    'init_declarator : declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("init_declarator", union_line_range(children)), children)
-
-
-def p_init_declarator_2(t):
-    'init_declarator : declarator EQUALS initializer'
-    children = to_node(t[1:])
-    t[0] = Node(("init_declarator", union_line_range(children)), children)
-
-# struct-declaration:
-
-
-def p_struct_declaration(t):
-    'struct_declaration : specifier_qualifier_list struct_declarator_list SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declaration", union_line_range(children)), children)
-
-# specifier-qualifier-list:
-
-
-def p_specifier_qualifier_list_1(t):
-    'specifier_qualifier_list : type_specifier specifier_qualifier_list'
-    children = to_node(t[1:])
-    t[0] = Node(("specifier_qualifier_list", union_line_range(children)), children)
-
-
-def p_specifier_qualifier_list_2(t):
-    'specifier_qualifier_list : type_specifier'
-    children = to_node(t[1:])
-    t[0] = Node(("specifier_qualifier_list", union_line_range(children)), children)
-
-
-def p_specifier_qualifier_list_3(t):
-    'specifier_qualifier_list : type_qualifier specifier_qualifier_list'
-    children = to_node(t[1:])
-    t[0] = Node(("specifier_qualifier_list", union_line_range(children)), children)
-
-
-def p_specifier_qualifier_list_4(t):
-    'specifier_qualifier_list : type_qualifier'
-    children = to_node(t[1:])
-    t[0] = Node(("specifier_qualifier_list", union_line_range(children)), children)
-
-# struct-declarator-list:
-
-
-def p_struct_declarator_list_1(t):
-    'struct_declarator_list : struct_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declarator_list", union_line_range(children)), children)
-
-
-def p_struct_declarator_list_2(t):
-    'struct_declarator_list : struct_declarator_list COMMA struct_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declarator_list", union_line_range(children)), children)
-
-# struct-declarator:
-
-
-def p_struct_declarator_1(t):
-    'struct_declarator : declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declarator", union_line_range(children)), children)
-
-
-def p_struct_declarator_2(t):
-    'struct_declarator : declarator COLON constant_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declarator", union_line_range(children)), children)
-
-
-def p_struct_declarator_3(t):
-    'struct_declarator : COLON constant_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("struct_declarator", union_line_range(children)), children)
-
-# enum-specifier:
-
-
-def p_enum_specifier_1(t):
-    'enum_specifier : ENUM ID LBRACE enumerator_list RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("enum_specifier", union_line_range(children)), children)
-
-
-def p_enum_specifier_2(t):
-    'enum_specifier : ENUM LBRACE enumerator_list RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("enum_specifier", union_line_range(children)), children)
-
-
-def p_enum_specifier_3(t):
-    'enum_specifier : ENUM ID'
-    children = to_node(t[1:])
-    t[0] = Node(("enum_specifier", union_line_range(children)), children)
-
-# enumerator_list:
-
-
-def p_enumerator_list_1(t):
-    'enumerator_list : enumerator'
-    children = to_node(t[1:])
-    t[0] = Node(("enumerator_list", union_line_range(children)), children)
-
-
-def p_enumerator_list_2(t):
-    'enumerator_list : enumerator_list COMMA enumerator'
-    children = to_node(t[1:])
-    t[0] = Node(("enumerator_list", union_line_range(children)), children)
-
-# enumerator:
-
-
-def p_enumerator_1(t):
-    'enumerator : ID'
-    children = to_node(t[1:])
-    t[0] = Node(("enumerator", union_line_range(children)), children)
-
-
-def p_enumerator_2(t):
-    'enumerator : ID EQUALS constant_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("enumerator", union_line_range(children)), children)
-
-# declarator:
-
-
-def p_declarator_1(t):
-    'declarator : pointer direct_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("declarator", union_line_range(children)), children)
-
-
-def p_declarator_2(t):
-    'declarator : direct_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("declarator", union_line_range(children)), children)
-
-# direct-declarator:
-
-
-def p_direct_declarator_1(t):
-    'direct_declarator : ID'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_declarator", union_line_range(children)), children)
-
-
-def p_direct_declarator_2(t):
-    'direct_declarator : LPAREN declarator RPAREN'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_declarator", union_line_range(children)), children)
-
-
-def p_direct_declarator_3(t):
-    'direct_declarator : direct_declarator LBRACKET constant_expression_opt RBRACKET'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_declarator", union_line_range(children)), children)
-
-
-def p_direct_declarator_4(t):
-    'direct_declarator : direct_declarator LPAREN parameter_type_list RPAREN '
-    children = to_node(t[1:])
-    t[0] = Node(("direct_declarator", union_line_range(children)), children)
-
-
-def p_direct_declarator_5(t):
-    'direct_declarator : direct_declarator LPAREN identifier_list RPAREN '
-    children = to_node(t[1:])
-    t[0] = Node(("direct_declarator", union_line_range(children)), children)
-
-
-def p_direct_declarator_6(t):
-    'direct_declarator : direct_declarator LPAREN RPAREN '
-    children = to_node(t[1:])
-    t[0] = Node(("direct_declarator", union_line_range(children)), children)
-
-# pointer:
-
-
-def p_pointer_1(t):
-    'pointer : TIMES type_qualifier_list'
-    children = to_node(t[1:])
-    t[0] = Node(("pointer", union_line_range(children)), children)
-
-
-def p_pointer_2(t):
-    'pointer : TIMES'
-    children = to_node(t[1:])
-    t[0] = Node(("pointer", union_line_range(children)), children)
-
-
-def p_pointer_3(t):
-    'pointer : TIMES type_qualifier_list pointer'
-    children = to_node(t[1:])
-    t[0] = Node(("pointer", union_line_range(children)), children)
-
-
-def p_pointer_4(t):
-    'pointer : TIMES pointer'
-    children = to_node(t[1:])
-    t[0] = Node(("pointer", union_line_range(children)), children)
-
-# type-qualifier-list:
-
-
-def p_type_qualifier_list_1(t):
-    'type_qualifier_list : type_qualifier'
-    children = to_node(t[1:])
-    t[0] = Node(("type_qualifier_list", union_line_range(children)), children)
-
-
-def p_type_qualifier_list_2(t):
-    'type_qualifier_list : type_qualifier_list type_qualifier'
-    children = to_node(t[1:])
-    t[0] = Node(("type_qualifier_list", union_line_range(children)), children)
-
-# parameter-type-list:
-
-
-def p_parameter_type_list_1(t):
-    'parameter_type_list : parameter_list'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_type_list", union_line_range(children)), children)
-
-
-def p_parameter_type_list_2(t):
-    'parameter_type_list : parameter_list COMMA ELLIPSIS'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_type_list", union_line_range(children)), children)
-
-# parameter-list:
-
-
-def p_parameter_list_1(t):
-    'parameter_list : parameter_declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_list", union_line_range(children)), children)
-
-
-def p_parameter_list_2(t):
-    'parameter_list : parameter_list COMMA parameter_declaration'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_list", union_line_range(children)), children)
-
-# parameter-declaration:
-
-
-def p_parameter_declaration_1(t):
-    'parameter_declaration : declaration_specifiers declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_declaration", union_line_range(children)), children)
-
-
-def p_parameter_declaration_2(t):
-    'parameter_declaration : declaration_specifiers abstract_declarator_opt'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_declaration", union_line_range(children)), children)
-
-# identifier-list:
-
-
-def p_identifier_list_1(t):
-    'identifier_list : ID'
-    children = to_node(t[1:])
-    t[0] = Node(("identifier_list", union_line_range(children)), children)
-
-
-def p_identifier_list_2(t):
-    'identifier_list : identifier_list COMMA ID'
-    children = to_node(t[1:])
-    t[0] = Node(("identifier_list", union_line_range(children)), children)
-
-# initializer:
-
-
-def p_initializer_1(t):
-    'initializer : assignment_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("initializer", union_line_range(children)), children)
-
-
-def p_initializer_2(t):
-    '''initializer : LBRACE initializer_list RBRACE
-                   | LBRACE initializer_list COMMA RBRACE'''
-    children = to_node(t[1:])
-    t[0] = Node(("initializer", union_line_range(children)), children)
-
-# initializer-list:
-
-
-def p_initializer_list_1(t):
-    'initializer_list : initializer'
-    children = to_node(t[1:])
-    t[0] = Node(("initializer_list", union_line_range(children)), children)
-
-def p_initializer_list_2(t):
-    'initializer_list : initializer_list COMMA initializer'
-    children = to_node(t[1:])
-    t[0] = Node(("initializer_list", union_line_range(children)), children)
-
-# type-name:
-
-
-def p_type_name(t):
-    'type_name : specifier_qualifier_list abstract_declarator_opt'
-    children = to_node(t[1:])
-    t[0] = Node(("type_name", union_line_range(children)), children)
-
-
-def p_abstract_declarator_opt_1(t):
-    'abstract_declarator_opt : empty'
-    children = to_node(t[1:])
-    t[0] = Node(("abstract_declarator_opt", union_line_range(children)), children)
-
-
-def p_abstract_declarator_opt_2(t):
-    'abstract_declarator_opt : abstract_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("abstract_declarator_opt", union_line_range(children)), children)
-
-# abstract-declarator:
-
-
-def p_abstract_declarator_1(t):
-    'abstract_declarator : pointer '
-    children = to_node(t[1:])
-    t[0] = Node(("abstract_declarator", union_line_range(children)), children)
-
-
-def p_abstract_declarator_2(t):
-    'abstract_declarator : pointer direct_abstract_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("abstract_declarator", union_line_range(children)), children)
-
-
-def p_abstract_declarator_3(t):
-    'abstract_declarator : direct_abstract_declarator'
-    children = to_node(t[1:])
-    t[0] = Node(("abstract_declarator", union_line_range(children)), children)
-
-# direct-abstract-declarator:
-
-
-def p_direct_abstract_declarator_1(t):
-    'direct_abstract_declarator : LPAREN abstract_declarator RPAREN'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_abstract_declarator", union_line_range(children)), children)
-
-
-def p_direct_abstract_declarator_2(t):
-    'direct_abstract_declarator : direct_abstract_declarator LBRACKET constant_expression_opt RBRACKET'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_abstract_declarator", union_line_range(children)), children)
-
-
-def p_direct_abstract_declarator_3(t):
-    'direct_abstract_declarator : LBRACKET constant_expression_opt RBRACKET'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_abstract_declarator", union_line_range(children)), children)
-
-
-def p_direct_abstract_declarator_4(t):
-    'direct_abstract_declarator : direct_abstract_declarator LPAREN parameter_type_list_opt RPAREN'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_abstract_declarator", union_line_range(children)), children)
-
-
-def p_direct_abstract_declarator_5(t):
-    'direct_abstract_declarator : LPAREN parameter_type_list_opt RPAREN'
-    children = to_node(t[1:])
-    t[0] = Node(("direct_abstract_declarator", union_line_range(children)), children)
-
-# Optional fields in abstract declarators
-
-
-def p_constant_expression_opt_1(t):
-    'constant_expression_opt : empty'
-    children = to_node(t[1:])
-    t[0] = Node(("constant_expression_opt", union_line_range(children)), children)
-
-
-def p_constant_expression_opt_2(t):
-    'constant_expression_opt : constant_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("constant_expression_opt", union_line_range(children)), children)
-
-
-def p_parameter_type_list_opt_1(t):
-    'parameter_type_list_opt : empty'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_type_list_opt", union_line_range(children)), children)
-
-
-def p_parameter_type_list_opt_2(t):
-    'parameter_type_list_opt : parameter_type_list'
-    children = to_node(t[1:])
-    t[0] = Node(("parameter_type_list_opt", union_line_range(children)), children)
-
-# statement:
-
-
-def p_statement(t):
+# postfix-expression
+def p_postfix_expression(p):
     '''
-    statement : labeled_statement
-              | expression_statement
-              | compound_statement
-              | selection_statement
-              | iteration_statement
-              | jump_statement
-              '''
-    children = to_node(t[1:])
-    t[0] = Node(("statement", union_line_range(children)), children)
-
-# labeled-statement:
-
-
-def p_labeled_statement_1(t):
-    'labeled_statement : ID COLON statement'
-    children = to_node(t[1:])
-    t[0] = Node(("labeled_statement", union_line_range(children)), children)
-
-
-def p_labeled_statement_2(t):
-    'labeled_statement : CASE constant_expression COLON statement'
-    children = to_node(t[1:])
-    t[0] = Node(("labeled_statement", union_line_range(children)), children)
-
-
-def p_labeled_statement_3(t):
-    'labeled_statement : DEFAULT COLON statement'
-    children = to_node(t[1:])
-    t[0] = Node(("labeled_statement", union_line_range(children)), children)
-
-# expression-statement:
-
-
-def p_expression_statement(t):
-    'expression_statement : expression_opt SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("expression_statement", union_line_range(children)), children)
-
-# compound-statement:
-
-
-def p_compound_statement_1(t):
-    'compound_statement : LBRACE declaration_list statement_list RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("compound_statement", union_line_range(children)), children)
-
-
-def p_compound_statement_2(t):
-    'compound_statement : LBRACE statement_list RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("compound_statement", union_line_range(children)), children)
-
-
-def p_compound_statement_3(t):
-    'compound_statement : LBRACE declaration_list RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("compound_statement", union_line_range(children)), children)
-
-
-def p_compound_statement_4(t):
-    'compound_statement : LBRACE RBRACE'
-    children = to_node(t[1:])
-    t[0] = Node(("compound_statement", union_line_range(children)), children)
-
-# statement-list:
-
-
-def p_statement_list_1(t):
-    'statement_list : statement'
-    children = to_node(t[1:])
-    t[0] = Node(("statement_list", union_line_range(children)), children)
-
-
-def p_statement_list_2(t):
-    'statement_list : statement_list statement'
-    children = to_node(t[1:])
-    t[0] = Node(("statement_list", union_line_range(children)), children)
-
-# selection-statement
-
-
-def p_selection_statement_1(t):
-    'selection_statement : IF LPAREN expression RPAREN statement'
-    children = to_node(t[1:])
-    t[0] = Node(("selection_statement", union_line_range(children)), children)
-
-
-def p_selection_statement_2(t):
-    'selection_statement : IF LPAREN expression RPAREN statement ELSE statement '
-    children = to_node(t[1:])
-    t[0] = Node(("selection_statement", union_line_range(children)), children)
-
-
-def p_selection_statement_3(t):
-    'selection_statement : SWITCH LPAREN expression RPAREN statement '
-    children = to_node(t[1:])
-    t[0] = Node(("selection_statement", union_line_range(children)), children)
-
-# iteration_statement:
-
-
-def p_iteration_statement_1(t):
-    'iteration_statement : WHILE LPAREN expression RPAREN statement'
-    children = to_node(t[1:])
-    t[0] = Node(("iteration_statement", union_line_range(children)), children)
-
-
-def p_iteration_statement_2(t):
-    'iteration_statement : FOR LPAREN expression_opt SEMI expression_opt SEMI expression_opt RPAREN statement '
-    children = to_node(t[1:])
-    t[0] = Node(("iteration_statement", union_line_range(children)), children)
-
-
-def p_iteration_statement_3(t):
-    'iteration_statement : DO statement WHILE LPAREN expression RPAREN SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("iteration_statement", union_line_range(children)), children)
-
-# jump_statement:
-
-
-def p_jump_statement_1(t):
-    'jump_statement : GOTO ID SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("jump_statement", union_line_range(children)), children)
-
-
-def p_jump_statement_2(t):
-    'jump_statement : CONTINUE SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("jump_statement", union_line_range(children)), children)
-
-
-def p_jump_statement_3(t):
-    'jump_statement : BREAK SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("jump_statement", union_line_range(children)), children)
-
-
-def p_jump_statement_4(t):
-    'jump_statement : RETURN expression_opt SEMI'
-    children = to_node(t[1:])
-    t[0] = Node(("jump_statement", union_line_range(children)), children)
-
-
-def p_expression_opt_1(t):
-    'expression_opt : empty'
-    children = to_node(t[1:])
-    t[0] = Node(("expression_opt", union_line_range(children)), children)
-
-
-def p_expression_opt_2(t):
-    'expression_opt : expression'
-    children = to_node(t[1:])
-    t[0] = Node(("expression_opt", union_line_range(children)), children)
-
-# expression:
-
-
-def p_expression_1(t):
-    'expression : assignment_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("expression", union_line_range(children)), children)
-
-
-def p_expression_2(t):
-    'expression : expression COMMA assignment_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("expression", union_line_range(children)), children)
-
-# assigment_expression:
-
-
-def p_assignment_expression_1(t):
-    'assignment_expression : conditional_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("assignment_expression", union_line_range(children)), children)
-
-
-def p_assignment_expression_2(t):
-    'assignment_expression : unary_expression assignment_operator assignment_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("assignment_expression", union_line_range(children)), children)
-
-# assignment_operator:
-
-
-def p_assignment_operator(t):
+        postfix_expression : primary_expression
+                           | postfix_expression LBRACKET expression RBRACKET
+                           | postfix_expression LPAREN argument_expression_list RPAREN
+                           | postfix_expression PERIOD ID
+                           | postfix_expression ARROW ID
+                           | postfix_expression INCREMENT
+                           | postfix_expression DECREMENT
     '''
-    assignment_operator : EQUALS
-                        | TIMESEQUAL
-                        | DIVEQUAL
-                        | MODEQUAL
-                        | PLUSEQUAL
-                        | MINUSEQUAL
-                        | LSHIFTEQUAL
-                        | RSHIFTEQUAL
-                        | ANDEQUAL
-                        | OREQUAL
-                        | XOREQUAL
-                        '''
-    children = to_node(t[1:])
-    t[0] = Node(("assignment_operator", union_line_range(children)), children)
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 5:
+        if p[2] == '[':
+            type = 'ARRAY'
+        else:
+            type = 'FUNCTION'
+        id = node.Node(type, p[1], p.lineno(1))
+        index = node.Node('INDEX', p[3], p.lineno(3))
+        p[0] = node.Node(type, None, p.lineno(2), [id, index])
+    elif len(p) == 4:
+        raise UnsupportedFeatureError()
+    elif len(p) == 3:
+        if p[2] == '++':
+            p[0] = node.Node('POSTINC', p[1], p.lineno(2))
+        else:
+            p[0] = node.Node('POSTDEC', p[1], p.lineno(2))
 
-# conditional-expression
-
-
-def p_conditional_expression_1(t):
-    'conditional_expression : logical_or_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("conditional_expression", union_line_range(children)), children)
-
-
-def p_conditional_expression_2(t):
-    'conditional_expression : logical_or_expression CONDOP expression COLON conditional_expression '
-    children = to_node(t[1:])
-    t[0] = Node(("conditional_expression", union_line_range(children)), children)
-
-# constant-expression
-
-
-def p_constant_expression(t):
-    'constant_expression : conditional_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("constant_expression", union_line_range(children)), children)
-
-# logical-or-expression
-
-
-def p_logical_or_expression_1(t):
-    'logical_or_expression : logical_and_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("logical_or_expression", union_line_range(children)), children)
-
-
-def p_logical_or_expression_2(t):
-    'logical_or_expression : logical_or_expression LOR logical_and_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("logical_or_expression", union_line_range(children)), children)
-
-# logical-and-expression
-
-
-def p_logical_and_expression_1(t):
-    'logical_and_expression : inclusive_or_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("logical_and_expression", union_line_range(children)), children)
-
-
-def p_logical_and_expression_2(t):
-    'logical_and_expression : logical_and_expression LAND inclusive_or_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("logical_and_expression", union_line_range(children)), children)
-
-# inclusive-or-expression:
-
-
-def p_inclusive_or_expression_1(t):
-    'inclusive_or_expression : exclusive_or_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("inclusive_or_expression", union_line_range(children)), children)
-
-
-def p_inclusive_or_expression_2(t):
-    'inclusive_or_expression : inclusive_or_expression OR exclusive_or_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("inclusive_or_expression", union_line_range(children)), children)
-
-# exclusive-or-expression:
-
-
-def p_exclusive_or_expression_1(t):
-    'exclusive_or_expression :  and_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("exclusive_or_expression", union_line_range(children)), children)
-
-
-def p_exclusive_or_expression_2(t):
-    'exclusive_or_expression :  exclusive_or_expression XOR and_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("exclusive_or_expression", union_line_range(children)), children)
-
-# AND-expression
-
-
-def p_and_expression_1(t):
-    'and_expression : equality_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("and_expression", union_line_range(children)), children)
-
-
-def p_and_expression_2(t):
-    'and_expression : and_expression AND equality_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("and_expression", union_line_range(children)), children)
-
-
-# equality-expression:
-def p_equality_expression_1(t):
-    'equality_expression : relational_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("equality_expression", union_line_range(children)), children)
-
-
-def p_equality_expression_2(t):
-    'equality_expression : equality_expression EQ relational_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("equality_expression", union_line_range(children)), children)
-
-
-def p_equality_expression_3(t):
-    'equality_expression : equality_expression NE relational_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("equality_expression", union_line_range(children)), children)
-
-
-# relational-expression:
-def p_relational_expression_1(t):
-    'relational_expression : shift_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("relational_expression", union_line_range(children)), children)
-
-
-def p_relational_expression_2(t):
-    'relational_expression : relational_expression LT shift_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("relational_expression", union_line_range(children)), children)
-
-
-def p_relational_expression_3(t):
-    'relational_expression : relational_expression GT shift_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("relational_expression", union_line_range(children)), children)
-
-
-def p_relational_expression_4(t):
-    'relational_expression : relational_expression LE shift_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("relational_expression", union_line_range(children)), children)
-
-
-def p_relational_expression_5(t):
-    'relational_expression : relational_expression GE shift_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("relational_expression", union_line_range(children)), children)
-
-# shift-expression
-
-
-def p_shift_expression_1(t):
-    'shift_expression : additive_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("shift_expression", union_line_range(children)), children)
-
-
-def p_shift_expression_2(t):
-    'shift_expression : shift_expression LSHIFT additive_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("shift_expression", union_line_range(children)), children)
-
-
-def p_shift_expression_3(t):
-    'shift_expression : shift_expression RSHIFT additive_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("shift_expression", union_line_range(children)), children)
-
-# additive-expression
-
-
-def p_additive_expression_1(t):
-    'additive_expression : multiplicative_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("additive_expression", union_line_range(children)), children)
-
-
-def p_additive_expression_2(t):
-    'additive_expression : additive_expression PLUS multiplicative_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("additive_expression", union_line_range(children)), children)
-
-
-def p_additive_expression_3(t):
-    'additive_expression : additive_expression MINUS multiplicative_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("additive_expression", union_line_range(children)), children)
-
-# multiplicative-expression
-
-
-def p_multiplicative_expression_1(t):
-    'multiplicative_expression : cast_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("multiplicative_expression", union_line_range(children)), children)
-
-
-def p_multiplicative_expression_2(t):
-    'multiplicative_expression : multiplicative_expression TIMES cast_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("multiplicative_expression", union_line_range(children)), children)
-
-
-def p_multiplicative_expression_3(t):
-    'multiplicative_expression : multiplicative_expression DIVIDE cast_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("multiplicative_expression", union_line_range(children)), children)
-
-
-def p_multiplicative_expression_4(t):
-    'multiplicative_expression : multiplicative_expression MOD cast_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("multiplicative_expression", union_line_range(children)), children)
-
-# cast-expression:
-
-
-def p_cast_expression_1(t):
-    'cast_expression : unary_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("cast_expression", union_line_range(children)), children)
-
-
-def p_cast_expression_2(t):
-    'cast_expression : LPAREN type_name RPAREN cast_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("cast_expression", union_line_range(children)), children)
-
-# unary-expression:
-
-
-def p_unary_expression_1(t):
-    'unary_expression : postfix_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("unary_expression", union_line_range(children)), children)
-
-
-def p_unary_expression_2(t):
-    'unary_expression : PLUSPLUS unary_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("unary_expression", union_line_range(children)), children)
-
-
-def p_unary_expression_3(t):
-    'unary_expression : MINUSMINUS unary_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("unary_expression", union_line_range(children)), children)
-
-
-def p_unary_expression_4(t):
-    'unary_expression : unary_operator cast_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("unary_expression", union_line_range(children)), children)
-
-
-def p_unary_expression_5(t):
-    'unary_expression : SIZEOF unary_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("unary_expression", union_line_range(children)), children)
-
-
-def p_unary_expression_6(t):
-    'unary_expression : SIZEOF LPAREN type_name RPAREN'
-    children = to_node(t[1:])
-    t[0] = Node(("unary_expression", union_line_range(children)), children)
-
-# unary-operator
-
-
-def p_unary_operator(t):
-    '''unary_operator : AND
-                    | TIMES
-                    | PLUS
-                    | MINUS
-                    | NOT
-                    | LNOT '''
-    children = to_node(t[1:])
-    t[0] = Node(("unary_operator", union_line_range(children)), children)
-
-# postfix-expression:
-
-
-def p_postfix_expression_1(t):
-    'postfix_expression : primary_expression'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-
-def p_postfix_expression_2(t):
-    'postfix_expression : postfix_expression LBRACKET expression RBRACKET'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-
-def p_postfix_expression_3(t):
-    'postfix_expression : postfix_expression LPAREN argument_expression_list RPAREN'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-
-def p_postfix_expression_4(t):
-    'postfix_expression : postfix_expression LPAREN RPAREN'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-
-def p_postfix_expression_5(t):
-    'postfix_expression : postfix_expression PERIOD ID'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-
-def p_postfix_expression_6(t):
-    'postfix_expression : postfix_expression ARROW ID'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-
-def p_postfix_expression_7(t):
-    'postfix_expression : postfix_expression PLUSPLUS'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-
-def p_postfix_expression_8(t):
-    'postfix_expression : postfix_expression MINUSMINUS'
-    children = to_node(t[1:])
-    t[0] = Node(("postfix_expression", union_line_range(children)), children)
-
-# primary-expression:
-
-
-def p_primary_expression(t):
-    '''primary_expression :  ID
-                        |  constant
-                        |  SCONST
-                        |  LPAREN expression RPAREN'''
-    children = to_node(t[1:])
-    t[0] = Node(("primary_expression", union_line_range(children)), children)
 
 # argument-expression-list:
+def p_argument_expression_list(p):
+    '''
+        argument_expression_list : assignment_expression
+                                 | argument_expression_list COMMA assignment_expression
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('ARG_EXPR_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
-def p_argument_expression_list(t):
-    '''argument_expression_list :  assignment_expression
-                              |  argument_expression_list COMMA assignment_expression'''
-    children = to_node(t[1:])
-    t[0] = Node(("argument_expression_list", union_line_range(children)), children)
+# unary-expression
+def p_unary_expression(p):
+    '''
+        unary_expression : postfix_expression
+                         | INCREMENT unary_expression
+                         | DECREMENT unary_expression
+                         | unary_operator cast_expression
+                         | SIZEOF unary_expression
+                         | SIZEOF LPAREN type_name RPAREN
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        if p[1] == '++':
+            p[0] = node.Node('PREINC', None, p.lineno(1), [p[2]])
+        elif p[1] == '--':
+            p[0] = node.Node('PREDEC', None, p.lineno(1), [p[2]])
+        elif p[1] != 'sizeof':
+            p[0] = node.Node('UNARY', None, p.lineno(1), [p[1], p[2]])
+        else:
+            p[0] = node.Node('SIZEOF', None, p.lineno(1), [p[2]])
+    else:
+        p[0] = node.Node('SIZEOF', None, p.lineno(1), [p[3]])
 
-# constant:
+
+# unary-operator
+def p_unary_operator(p):
+    '''
+        unary_operator : AMPERSAND
+                       | ASTERISK
+                       | PLUS
+                       | MINUS
+                       | B_NOT
+                       | L_NOT
+    '''
+    p[0] = node.Node('UNA_OP', p[1], p.lineno(1))
 
 
-def p_constant(t):
-    '''constant : ICONST
-               | FCONST
-               | CCONST'''
-    children = to_node(t[1:])
-    t[0] = Node(("constant", union_line_range(children)), children)
+# cast-expression
+def p_cast_expression(p):
+    '''
+        cast_expression : unary_expression
+                        | LPAREN type_name RPAREN cast_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('CAST', None, p.lineno(2), [p[2], p[4]])
 
-def p_empty(t):
+
+# multiplicative-expression
+def p_multiplicative_expression(p):
+    '''
+        multiplicative_expression : cast_expression
+                                  | multiplicative_expression ASTERISK cast_expression
+                                  | multiplicative_expression DIV cast_expression
+                                  | multiplicative_expression MOD cast_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('MUL_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# additive-expression
+def p_additive_expression(p):
+    '''
+        additive_expression : multiplicative_expression
+                            | additive_expression PLUS multiplicative_expression
+                            | additive_expression MINUS multiplicative_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('ADD_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# shift-expression
+def p_shift_expression(p):
+    '''
+        shift_expression : additive_expression
+                         | shift_expression B_LSHIFT additive_expression
+                         | shift_expression B_RSHIFT additive_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('SHIFT_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# relational-expression
+def p_relational_expression(p):
+    '''
+        relational_expression : shift_expression
+                              | relational_expression LT shift_expression
+                              | relational_expression GT shift_expression
+                              | relational_expression LE shift_expression
+                              | relational_expression GE shift_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('REL_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# equality-expression
+def p_equality_expression(p):
+    '''
+        equality_expression : relational_expression
+                            | equality_expression EQ relational_expression
+                            | equality_expression NE relational_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('EQ_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# AND-expression
+def p_AND_expression(p):
+    '''
+        AND_expression : equality_expression
+                       | AND_expression AMPERSAND equality_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('AND_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# exclusive-OR-expression
+def p_exclusive_OR_expression(p):
+    '''
+        exclusive_OR_expression : AND_expression
+                                | exclusive_OR_expression B_XOR AND_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('XOR_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# inclusive-OR-expression
+def p_inclusive_OR_expression(p):
+    '''
+        inclusive_OR_expression : exclusive_OR_expression
+                                | inclusive_OR_expression B_OR exclusive_OR_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('OR_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# logical-and-expression
+def p_logical_AND_expression(p):
+    '''
+        logical_AND_expression : inclusive_OR_expression
+                               | logical_AND_expression L_AND inclusive_OR_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('L_AND_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# logical-or-expression
+def p_logical_OR_expression(p):
+    '''
+        logical_OR_expression : logical_AND_expression
+                              | logical_OR_expression L_OR logical_AND_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('L_OR_EXPR', p[2], p.lineno(2), [p[1], p[3]])
+
+
+# conditional-expression
+def p_conditional_expression(p):
+    '''
+        conditional_expression : logical_OR_expression
+                               | logical_OR_expression TERNARY expression COLON conditional_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('TERNARY', p[2], p.lineno(2), [p[1], p[3], p[5]])
+
+
+# assignment-expression
+def p_assignment_expression(p):
+    '''
+        assignment_expression : conditional_expression
+                              | unary_expression assignment_operator assignment_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('ASSIGN_EXPR', p[2].value, p[2].lineno, [p[1], p[3]])
+
+
+# assignment-operator
+def p_assignment_operator(p):
+    '''
+        assignment_operator : ASSIGN
+                            | MUL_ASSIGN
+                            | DIV_ASSIGN
+                            | MOD_ASSIGN
+                            | ADD_ASSIGN
+                            | SUB_ASSIGN
+                            | B_LSHIFT_ASSIGN
+                            | B_RSHIFT_ASSIGN
+                            | B_AND_ASSIGN
+                            | B_XOR_ASSIGN
+                            | B_OR_ASSIGN
+    '''
+    p[0] = node.Node('ASSIGN_OP', p[1], p.lineno(1))
+
+
+# expression
+def p_expression(p):
+    '''
+        expression : assignment_expression
+                   | expression COMMA assignment_expression
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('EXPR', None, p.lineno(2), [p[1], p[3]])
+
+
+# constant-expression
+def p_constant_expression(p):
+    'constant_expression : conditional_expression'
+    # This seems redundant, but it is necessary so that we can check whether it is really constant.
+    # Note that conditional_expression may not be constant, so we need to check.
+    p[0] = node.Node("CONST_EXP", None, p.lineno(1), [p[1]])
+
+
+# declaration
+def p_declaration(p):
+    '''
+        declaration : declaration_specifiers SEMI_COLON
+                    | declaration_specifiers init_declarator_list SEMI_COLON
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('DECLARATION', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node('DECLARATION', None, p.lineno(1), [p[1], p[2]])
+
+
+# declaration-specifiers
+def p_declaration_specifiers(p):
+    '''
+        declaration_specifiers : storage_class_specifier
+                               | storage_class_specifier declaration_specifiers
+                               | type_specifier
+                               | type_specifier declaration_specifiers
+                               | type_qualifier
+                               | type_qualifier declaration_specifiers
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('DECL_SPEC_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[2]
+        p[0].add_child(p[1], 0)
+
+
+# init-declarator-list:
+def p_init_declarator_list(p):
+    '''
+        init_declarator_list : init_declarator
+                             | init_declarator_list COMMA init_declarator
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('INIT_DECL_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
+
+
+# init-declarator
+def p_init_declarator(p):
+    '''
+        init_declarator : declarator
+                        | declarator ASSIGN initializer
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('DECL_W/O_INIT', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node('DECL_W_INIT', None, p.lineno(1), [p[1], p[3]])
+
+
+# storage-class-specifier
+def p_storage_class_specifier(p):
+    '''
+        storage_class_specifier : TYPEDEF
+                                | EXTERN
+                                | STATIC
+                                | AUTO
+                                | REGISTER
+    '''
+    p[0] = node.Node('STORAGE_SPEC', p[1], p.lineno(1))
+
+
+# type-specifier
+def p_type_specifier(p):
+    '''
+        type_specifier : VOID
+                       | CHAR
+                       | SHORT
+                       | INT
+                       | LONG
+                       | FLOAT
+                       | DOUBLE
+                       | SIGNED
+                       | UNSIGNED
+                       | struct_or_union_specifier
+                       | enum_specifier
+                       | typedef_name
+    '''
+    if isinstance(p[1], node.Node):
+        p[0] = p[1]
+    else:
+        p[0] = node.Node('TYPE_SPEC', p[1], p.lineno(1))
+
+
+# struct-or-union-specifier
+def p_struct_or_union_specifier(p):
+    '''
+        struct_or_union_specifier : struct_or_union ID
+                                  | struct_or_union LBRACE struct_declaration_list RBRACE
+                                  | struct_or_union ID LBRACE struct_declaration_list RBRACE
+    '''
+    if len(p) == 3:
+        p[0] = node.Node(p[1].upper() + "_SPEC", p[2], p.lineno(1))
+    elif len(p) == 5:
+        p[0] = node.Node(p[1].upper() + "_SPEC", None, p.lineno(1), [p[3]])
+    else:
+        p[0] = node.Node(p[1].upper() + "_SPEC", p[2], p.lineno(1), [p[4]])
+
+
+# struct-or-union
+def p_struct_or_union(p):
+    '''
+        struct_or_union : STRUCT
+                        | UNION
+    '''
+    p[0] = p[1] # This does not returns node, however I used it so we can handle it in struct_or_union_specifier
+
+
+# struct-declaration-list
+def p_struct_declaration_list(p):
+    '''
+        struct_declaration_list : struct_declaration
+                                | struct_declaration_list struct_declaration
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('STRUCT_DECLARATION_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[1])
+
+
+# struct-declaration
+def p_struct_declaration(p):
+    'struct_declaration : specifier_qualifier_list struct_declarator_list SEMI_COLON'
+    p[0] = node.Node('STRUCT_DECLARATION', None, p.lineno(1), [p[1], p[2]])
+
+
+# specifier-qualifier-list
+def p_specifier_qualifier_list(p):
+    '''
+        specifier_qualifier_list : type_specifier
+                                 | type_specifier specifier_qualifier_list
+                                 | type_qualifier
+                                 | type_qualifier specifier_qualifier_list
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('SPEC_QUAL', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[2]
+        p[0].add_child(p[1], 0)
+
+# struct-declarator-list
+def p_struct_declarator_list(p):
+    '''
+        struct_declarator_list : struct_declarator
+                               | struct_declarator_list COMMA struct_declarator
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('STRUCT_DECLARATOR_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
+
+
+# struct-declarator
+def p_struct_declarator(p):
+    '''
+        struct_declarator : declarator
+                          | COLON constant_expression
+                          | declarator COLON constant_expression
+    '''
+    if len(p) == 2:
+        raise UnsupportedFeatureError()
+    elif len(p) == 3:
+        raise UnsupportedFeatureError()
+    else:
+        raise UnsupportedFeatureError()
+
+
+# enum-specifier
+def p_enum_specifier(p):
+    '''
+        enum_specifier : ENUM LBRACE enumerator_list RBRACE
+                       | ENUM ID LBRACE enumerator_list RBRACE
+                       | ENUM ID
+    '''
+    if len(p) == 5:
+        raise UnsupportedFeatureError()
+    elif len(p) == 6:
+        raise UnsupportedFeatureError()
+
+
+# enumerator-list:
+def p_enumerator_list(p):
+    '''
+        enumerator_list : enumerator
+                        | enumerator_list COMMA enumerator
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('ENUM_LIST', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
+
+
+# enumerator
+def p_enumerator(p):
+    '''
+        enumerator : ECONST
+                   | ECONST ASSIGN constant_expression
+    '''
+    if len(p) == 2:
+        raise UnsupportedFeatureError()
+    else:
+        raise UnsupportedFeatureError()
+
+
+# type-qualifier
+def p_type_qualifier(p):
+    '''
+        type_qualifier : CONST
+                       | VOLATILE
+    '''
+    p[0] = node.Node('TYPE_QUAL', p[1], p.lineno(1))
+
+
+# declarator
+def p_declarator(p):
+    '''
+        declarator : direct_declarator
+                   | pointer direct_declarator
+    '''
+    if len(p) == 2:
+        p[0] = node.Node('DECL', None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node('DECL', None, p.lineno(2), [p[1], p[2]])
+
+
+# direct-declarator
+def p_direct_declarator(p):
+    '''
+        direct_declarator : ID
+                          | LPAREN declarator RPAREN
+                          | direct_declarator LPAREN RPAREN
+                          | direct_declarator LBRACKET constant_expression RBRACKET
+                          | direct_declarator LPAREN parameter_type_list RPAREN
+                          | direct_declarator LPAREN identifier_list RPAREN
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("ID", p[1], p.lineno(1))
+    elif len(p) == 4 and p[1] == '(':
+        p[0] = p[2]
+    elif len(p) == 4:
+        p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1]])
+    elif len(p) == 5 and p[2] == '[':
+        p[0] = node.Node("ARR_DECL", None, p.lineno(1), [p[1], p[3]])
+    elif len(p) == 5 and p[3].type == "PARAM_LIST":
+        p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1], p[3]])
+    else:
+        p[0] = node.Node("FUN_APP", None, p.lineno(1), [p[1], p[3]])
+
+# pointer
+def p_pointer(p):
+    '''
+        pointer : ASTERISK
+                | ASTERISK type_qualifier_list
+                | ASTERISK pointer
+                | ASTERISK type_qualifier_list pointer
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("POINTER", None, p.lineno(1), [node.Node("ASTERISK", None, p.lineno(1))])
+    elif len(p) == 3 and p[2].type == "POINTER":
+        p[0] = p[2]
+        p[0].add_child(node.Node("ASTERISK", None, p.lineno(1)), 0)
+    elif len(p) == 3:
+        p[0] = node.Node("POINTER", None, p.lineno(1), [node.Node("ASTERISK", None, p.lineno(1)), p[2]])
+    else:
+        p[0] = p[3]
+        p[0].add_child(p[2], 0)
+        p[0].add_child(node.Node("ASTERISK", None, p.lineno(1)), 0)
+
+
+
+# type-qualifier-list
+def p_type_qualifier_list(p):
+    '''
+        type_qualifier_list : type_qualifier
+                            | type_qualifier_list type_qualifier
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("TYPE_QUAL_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[2])
+
+
+# parameter-type-list
+def p_parameter_type_list(p):
+    '''
+        parameter_type_list : parameter_list
+                            | parameter_list COMMA ELLIPSIS
+    '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        raise UnsupportedFeatureError()
+
+
+# parameter-list
+def p_parameter_list(p):
+    '''
+        parameter_list : parameter_declaration
+                       | parameter_list COMMA parameter_declaration
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("PARAM_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
+
+
+# parameter-declaration
+def p_parameter_declaration(p):
+    '''
+        parameter_declaration : declaration_specifiers declarator
+                              | declaration_specifiers
+                              | declaration_specifiers abstract_declarator
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("PARAM_DECLARATION", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("PARAM_DECLARATION", None, p.lineno(1), [p[1], p[2]])
+
+
+# identifier-list
+def p_identifier_list(p):
+    '''
+        identifier_list : ID
+                        | identifier_list COMMA ID
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("ID_LIST", [p[1]], p.lineno(1))
+    else:
+        p[0] = p[1]
+        p[0].value.append(p[3])
+
+
+# type-name
+def p_type_name(p):
+    '''
+        type_name : specifier_qualifier_list
+                  | specifier_qualifier_list abstract_declarator
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("TYPE_NAME", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("TYPE_NAME", None, p.lineno(1), [p[1], p[2]])
+
+
+# abstract-declaration
+def p_abstract_declarator(p):
+    '''
+        abstract_declarator : pointer
+                             | direct_abstract_declarator
+                             | pointer direct_abstract_declarator
+    '''
+    raise UnsupportedFeatureError()
+
+
+# direct-abstract-declaration
+def p_direct_abstract_declarator(p):
+    '''
+        direct_abstract_declarator : LPAREN abstract_declarator RPAREN
+                                   | LBRACKET RBRACKET
+                                   | LBRACKET constant_expression RBRACKET
+                                   | direct_abstract_declarator LBRACKET RBRACKET
+                                   | direct_abstract_declarator LBRACKET constant_expression RBRACKET
+                                   | LPAREN RPAREN
+                                   | LPAREN parameter_type_list RPAREN
+                                   | direct_abstract_declarator LPAREN RPAREN
+                                   | direct_abstract_declarator LPAREN parameter_type_list RPAREN
+    '''
+    raise UnsupportedFeatureError()
+
+
+# typedef-name
+def p_typedef_name(p):
+    'typedef_name : TYPEID'
+    p[0] = node.Node("TYPEDEF_NAME", p[1], p.lineno(1))
+
+
+# initializer
+def p_initializer(p):
+    '''
+        initializer : assignment_expression
+                    | LBRACE initializer_list RBRACE
+                    | LBRACE initializer_list COMMA RBRACE
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("INIT", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = node.Node("INIT", None, p.lineno(1), [p[2]])
+
+
+# initializer-list
+def p_initializer_list(p):
+    '''
+        initializer_list : initializer
+                         | initializer_list COMMA initializer
+    '''
+    if len(p) == 2:
+        p[0] = node.Node("INIT_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[3])
+
+
+# statement
+def p_statement(p):
+    '''
+        statement : labeled_statement
+                  | compound_statement
+                  | expression_statement
+                  | selection_statement
+                  | iteration_statement
+                  | jump_statement
+    '''
+    p[0] = p[1]
+
+
+# labeled-statement
+def p_labeled_statement(p):
+    '''
+        labeled_statement : ID COLON statement
+                          | CASE constant_expression COLON statement
+                          | DEFAULT COLON statement
+    '''
+    if p[1] == 'case':
+    	p[0] = node.Node('CASE', None, p.lineno(1), [p[2], p[4]])
+    elif p[1] == 'default':
+    	p[0] = node.Node('DEFAULT', None, p.lineno(1), [p[3]])
+    else:
+        p[0] = node.Node('LABEL', p[1], p.lineno(1), [p[3]])
+
+
+# compound-statement
+def p_compound_statement(p):
+    '''
+        compound_statement : LBRACE RBRACE
+                           | LBRACE declaration_list RBRACE
+                           | LBRACE statement_list RBRACE
+                           | LBRACE declaration_list statement_list RBRACE
+    '''
+
+    if len(p) == 3:
+    	p[0] = node.Node('COMP_STMT', None, p.lineno(1))
+    elif len(p) == 5:
+    	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2], p[3]])
+    else:
+    	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2]])
+
+
+# declaration-list
+def p_declaration_list(p):
+    '''
+        declaration_list : declaration
+                         | declaration_list declaration
+    '''
+    if len(p) == 2:
+    	p[0] = node.Node("DECLARATION_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[2])
+
+
+# statement-list
+def p_statement_list(p):
+    '''
+        statement_list : statement
+                       | statement_list statement
+    '''
+    if len(p) == 2:
+    	p[0] = node.Node("STMT_LIST", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[2])
+
+
+# expression-statement
+def p_expression_statement(p):
+    '''
+        expression_statement : SEMI_COLON
+                             | expression SEMI_COLON
+    '''
+    if len(p) == 2:
+    	p[0] = node.Node('EXPR_STMT', None, p.lineno(1))
+    else:
+    	p[0] = p[1]
+
+
+# selection-statement
+def p_selection_statement(p):
+    '''
+        selection_statement : IF LPAREN expression RPAREN statement
+                            | IF LPAREN expression RPAREN statement ELSE statement
+                            | SWITCH LPAREN expression RPAREN statement
+    '''
+    if p[1] == 'if':
+    	if len(p) == 6:
+    		p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5]])
+    	else:
+    		p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5], p[7]])
+    elif p[1] == 'switch':
+    	p[0] = node.Node('SWITCH', None, p.lineno(1), [p[3], p[5]])
+
+
+# iteration_statement
+def p_iteration_statement(p):
+    '''
+        iteration_statement : WHILE LPAREN expression RPAREN statement
+                            | DO statement WHILE LPAREN expression RPAREN SEMI_COLON
+                            | FOR LPAREN expression_opt SEMI_COLON expression_opt SEMI_COLON expression_opt RPAREN statement
+    '''
+    if p[1] == 'while':
+    	p[0] = node.Node('WHILE', None, p.lineno(1), [p[3], p[5]])
+    elif p[1] == 'do':
+    	p[0] = node.Node('DO_WHILE', None, p.lineno(1), [p[2], p[5]])
+    elif p[1] == 'for':
+    	p[0] = node.Node('FOR', None, p.lineno(1), [p[3], p[5], p[7], p[9]])
+
+
+# jump_statement
+def p_jump_statement(p):
+    '''
+        jump_statement : GOTO ID SEMI_COLON
+                       | CONTINUE SEMI_COLON
+                       | BREAK SEMI_COLON
+                       | RETURN SEMI_COLON
+                       | RETURN expression SEMI_COLON
+    '''
+    if p[1] == 'goto':
+    	p[0] = node.Node('GOTO', None, p.lineno(1), [p[2]])
+    elif p[1] == 'continue':
+    	p[0] = node.Node('CONTINUE', None, p.lineno(1))
+    elif p[1] == 'break':
+    	p[0] = node.Node('BREAK', None, p.lineno(1))
+    elif p[1] == 'return':
+    	if len(p) == 3:
+    		p[0] = node.Node('RETURN', None, p.lineno(1))
+    	else:
+    		p[0] = node.Node('RETURN', None, p.lineno(1), [p[2]])
+
+
+# translation-unit
+def p_translation_unit(p):
+    '''
+        translation_unit : external_declaration
+                         | translation_unit external_declaration
+    '''
+    if len(p) == 2:
+    	p[0] = node.Node("TRSL_UNIT", None, p.lineno(1), [p[1]])
+    else:
+        p[0] = p[1]
+        p[0].add_child(p[2])
+
+
+# external-declaration
+def p_external_declaration(p):
+    '''
+        external_declaration : function_definition
+                             | declaration
+    '''
+    p[0] = p[1]
+
+
+# function-definition
+def p_function_definition(p):
+    '''
+        function_definition : declarator compound_statement
+                            | declaration_specifiers declarator compound_statement
+                            | declarator declaration_list compound_statement
+                            | declaration_specifiers declarator declaration_list compound_statement
+    '''
+    if len(p) == 3:
+    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2]])
+    elif len(p) == 4:
+    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[3]])
+    else:
+    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[3], p[4]])
+
+
+# empty
+def p_empty(p):
     'empty : '
-    t[0] = Node(("empty", (None, None)))
+    p[0] = node.Node('EMPTY', None, p.lineno(0))
 
 
-def p_error(t):
+# opts
+def p_expression_opt(p):
+    '''
+        expression_opt : expression
+                       | empty
+    '''
+    if p[1].type == 'EMPTY':
+    	p[0] = node.Node('EXPR_OPT', None, p.lineno(0))
+    else:
+    	p[0] = p[1]
+
+
+def p_error(p):
     print("Whoa. We're hosed")
+    print("lineno: %d, pos: %d, token: %s" % (p.lineno, p.lexpos, p.value))
+
 
 import profile
 # Build the grammar
 
-#yacc.yacc()
-#yacc.yacc(method='LALR',write_tables=False,debug=False)
-
 parser = yacc.yacc()
+
+# while 1:
+#     try:
+#         s = input('expr > ')
+#     except EOFError:
+#         break
+#     if not s:
+#         continue
+#     yacc.parse(s)
+
+#yacc.yacc(method='LALR',write_tables=False,debug=False)
 
 #profile.run("yacc.yacc(method='LALR')")
