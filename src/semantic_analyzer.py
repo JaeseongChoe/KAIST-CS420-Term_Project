@@ -9,6 +9,7 @@ import lexical_analyzer
 import syntax_analyzer
 import symtab
 import node
+import copy
 
 # Basic class for type
 class Type:
@@ -44,7 +45,7 @@ class TypeError(Exception):
 class semantic_analyzer:
 	def __init__(self, ast, symtab):
 		# Cursor for original AST, symbol table
-		self.ast = ast
+		self.ast = copy.deepcopy(ast)
 		self.cursor = ast
 		self.symtab = symtab
 		self.lineno = 0
@@ -59,7 +60,6 @@ class semantic_analyzer:
 		elif src_type.pointer != dest_type.pointer:
 			raise TypeError("Wrong dereferencing type", line)
 
-		import copy
 		if src_type.type == dest_type.type:
 			return src_type
 
@@ -125,8 +125,6 @@ class semantic_analyzer:
 	def insert_symbol(self, spec_type, cursor, line):
 		# Insert symbol
 		index = 0
-
-		import copy
 		result_type = copy.deepcopy(spec_type)
 
 		if len(cursor.children) == 2:
@@ -164,9 +162,7 @@ class semantic_analyzer:
 		if not lookup_type:
 			raise TypeError('Free identifier', line)
 
-		import copy
 		lookup_type = copy.deepcopy(lookup_type.type)
-
 		if lookup_type.type == 'function' or lookup_type.pointer < 1:
 			raise TypeError('Undefined type', line)
 		else:
@@ -255,6 +251,7 @@ class semantic_analyzer:
 			return Type('int')
 
 		elif cursor_type == 'CAST':
+			self.type_check(cursor.children[1])
 			return self.type_check(cursor.children[0].children[0])
 
 		elif cursor_type == 'MUL_EXPR' or cursor_type == 'ADD_EXPR':
