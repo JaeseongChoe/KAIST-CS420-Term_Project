@@ -49,8 +49,12 @@ class semantic_analyzer:
 		self.symtab = symtab
 		self.lineno = 0
 
+	def binary_compat(self, src, dest, fixed = False):
+		# Check two types are compatible (i.e. int and float)
+		pass
+
 	def binary_same(self, left, right, line):
-		# TODO : Check two types are compatible (i.e. int and float)
+		# Check two types are same 
 		if left.type != right.type or left.pointer != right.pointer:
 			raise TypeError("Different type", line)
 		else:
@@ -144,6 +148,7 @@ class semantic_analyzer:
 		# AST type of current cursor
 		cursor_type = cursor.type
 		self.lineno = cursor.lineno
+		print(cursor_type)
 
 		if cursor_type == 'ICONST':
 			return Type('int')
@@ -192,7 +197,7 @@ class semantic_analyzer:
 			return Type('int')
 
 		elif cursor_type == 'CAST':
-			return Type(cursor.children[0].children[0])
+			return self.type_check(cursor.children[0].children[0])
 
 		elif cursor_type == 'MUL_EXPR' or cursor_type == 'ADD_EXPR':
 			return self.binary_same(self.type_check(cursor.children[0]), self.type_check(cursor.children[1]), self.lineno)
@@ -261,6 +266,11 @@ class semantic_analyzer:
 
 		elif cursor_type == 'TYPE_SPEC':
 			return Type(cursor.get_value())
+
+		elif cursor_type == 'SPEC_QUAL':
+			if len(cursor.children) == 1:
+				return Type(cursor.children[0].get_value())
+			return None
 
 		elif cursor_type == 'DECL':
 			if len(cursor.children) == 1:
@@ -391,13 +401,14 @@ class semantic_analyzer:
 				function_name = function_node.children[0].get_value()
 
 				arg_list = []
-				if len(function_node.children[1].children) == 2:
+				if len(function_node.children) == 2:
 					for param in function_node.children[1].children:
-						param_type = self.type_check(param.children[0])
-						id_type = self.type_check(param.children[1])
-						param_type.pointer = id_type.pointer
-						arg_list.append(param_type)
-						param_environment[id_type.input_type] = param_type
+						if len(param.children) == 2:
+							param_type = self.type_check(param.children[0])
+							id_type = self.type_check(param.children[1])
+							param_type.pointer = id_type.pointer
+							arg_list.append(param_type)
+							param_environment[id_type.input_type] = param_type
 
 				function_type = Type('function', input_type = arg_list, output_type = return_type)
 				self.symtab.insert(symtab.SymTabEntry(function_name, function_type))
@@ -424,7 +435,7 @@ class semantic_analyzer:
 			return None
 
 		else:
-			raise TypeError(cursor, 'Undefined type', self.lineno)
+			raise TypeError('Undefined type', self.lineno)
 
 	def check(self):
 		self.type_check(self.cursor)
@@ -443,7 +454,7 @@ lexer = lexical_analyzer.lexical_analyzer
 
 # Get AST from syntax analyzer
 parser = syntax_analyzer.parser
-ast = parser.parse(s, lexer = lexer)
+ast = parser.parse('float f() {int a; float b; a = 10; b = (float) a; return b;}', lexer = lexer)
 
 # Initialize semantic analyer
 semantic_analyzer = semantic_analyzer(ast, symtab.SymTab())
