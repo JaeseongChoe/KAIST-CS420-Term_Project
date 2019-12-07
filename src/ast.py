@@ -197,3 +197,163 @@ class Expr(Node):
             return '%s' % self.assign_expr
         else:
             return '%s, %s' % (self.expr, self.assign_expr)
+
+
+class CompStmt(Node):
+    def __init__(self, decl_list, stmt_list, lineno):
+        self.decl_list = decl_list
+        self.stmt_list = stmt_list
+        self.lineno = lineno
+
+    def __repr__(self):
+        if self.decl_list == None and self.stmt_list == None:
+            return '{}'
+        elif self.decl_list != None and self.stmt_list == None:
+            return '{%s}' % self.decl_list
+        elif self.decl_list == None and self.stmt_list != None:
+            return '{%s}' % self.stmt_list
+        else:
+            return '{%s %s}' % (self.decl_list, self.stmt_list)
+
+
+class DeclList(Node):
+    def __init__(self, decl_list, decl, lineno):
+        self.decl_list = decl_list
+        self.decl = decl
+        self.lineno = lineno
+
+    def __repr__(self):
+        if self.decl_list == None:
+            decl_list = ''
+        else:
+            decl_list = self.decl_list
+        return '%s %s' % (decl_list, self.decl)
+
+
+class StmtList(Node):
+    def __init__(self, stmt_list, stmt, lineno):
+        self.stmt_list = stmt_list
+        self.stmt = stmt
+        self.lineno = lineno
+
+    def __repr__(self):
+        if self.stmt_list == None:
+            return '%s' % self.stmt
+        else:
+            return '%s %s' % (self.stmt_list, self.stmt)
+
+
+class If(Node):
+    def __init__(self, condition, then_body, lineno):
+        self.condition = condition
+        self.then_body = then_body
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<IF (%s) {%s}>' % (self.condition, self.then_body)
+
+
+class IfElse(Node):
+    def __init__(self, condition, then_body, else_body, lineno):
+        self.condition = condition
+        self.then_body = then_body
+        self.else_body = else_body
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<if (%s) {%s} ELSE {%s}>' % (self.condition, self.then_body, self.else_body)
+
+
+class Switch(Node):
+    def __init__(self, cont_expr, case_body, lineno):
+        self.cont_expr = cont_expr
+        self.case_body = case_body
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<SWITCH (%s) {%s}>' % (self.cont_expr, self.case_body)
+
+
+class Case(Node):
+    def __init__(self, case_expr, case_body, lineno):
+        self.case_expr = case_expr
+        self.case_body = case_body
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<CASE %s: %s>' % (self.case_expr, self.case_body)
+
+
+class Default(Node):
+    def __init__(self, body, lineno):
+        self.body = body
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<DEFAULT: %s>' % self.body
+
+
+class While(Node):
+    def __init__(self, cont_expr, loop_body, lineno):
+        self.cont_expr = cont_expr
+        self.loop_body = loop_body
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<WHILE (%s) {%s}>' % (self.cont_expr, self.loop_body)
+
+
+class DoWhile(Node):
+    def __init__(self, loop_body, cont_expr, lineno):
+        self.loop_body = loop_body
+        self.cont_expr = cont_expr
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<DO {%s} WHILE (%s);>' % (self.loop_body, self.cont_expr)
+
+
+class For(Node):
+    def __init__(self, init, cond, after, body, lineno):
+        self.init = init
+        self.cond = cond
+        self.after = after
+        self.body = body
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<FOR (%s; %s; %s) {%s}>' % (self.init, self.cond, self.after, self.body)
+
+
+class Goto(Node):
+    def __init__(self, label, lineno):
+        self.label = label
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<GOTO(%s)>' % self.label
+
+
+class Continue(Node):
+    def __init__(self, lineno):
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<CONTINUE>'
+
+
+class Break(Node):
+    def __init__(self, lineno):
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<BREAK>'
+
+
+class Return(Node):
+    def __init__(self, return_expr, lineno):
+        self.return_expr = return_expr
+        self.lineno = lineno
+
+    def __repr__(self):
+        return '<return(%s)>' % self.return_expr
