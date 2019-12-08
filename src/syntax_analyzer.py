@@ -752,11 +752,11 @@ def p_labeled_statement(p):
                           | DEFAULT COLON statement
     '''
     if isinstance(p[1], node.Node):
-    	p[0] = node.Node('LABEL', p[3], p.lineno(1), [p[1]])
+    	p[0] = node.Node('LABEL', p[1], p.lineno(1), [p[3]])
     elif p[1] == 'case':
-    	p[0] = node.Node('CASE', p[4], p.lineno(1), [p[2]])
+    	p[0] = node.Node('CASE', None, p.lineno(1), [p[2], p[4]])
     elif p[1] == 'default':
-    	p[0] = node.Node('DEFAULT', p[3], p.lineno(1))
+    	p[0] = node.Node('DEFAULT', None, p.lineno(1), [p[3]])
 
 
 # compound-statement
@@ -769,7 +769,7 @@ def p_compound_statement(p):
     '''
 
     if len(p) == 3:
-    	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [])
+    	p[0] = node.Node('COMP_STMT', None, p.lineno(1))
     elif len(p) == 5:
     	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2], p[3]])
     else:
@@ -823,11 +823,11 @@ def p_selection_statement(p):
     '''
     if p[1] == 'if':
     	if len(p) == 6:
-    		p[0] = node.Node('IF', p[3], p.lineno(1), [p[5]])
+    		p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5]])
     	else:
-    		p[0] = node.Node('IF', p[3], p.lineno(1), [p[5], p[7]])
+    		p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5], p[7]])
     elif p[1] == 'switch':
-    	p[0] = node.Node('SWITCH', p[3], p.lineno(1), [p[5]])
+    	p[0] = node.Node('SWITCH', None, p.lineno(1), [p[3], p[5]])
 
 
 # iteration_statement
@@ -838,11 +838,11 @@ def p_iteration_statement(p):
                             | FOR LPAREN expression_opt SEMI_COLON expression_opt SEMI_COLON expression_opt RPAREN statement
     '''
     if p[1] == 'while':
-    	p[0] = node.Node('WHILE', p[3], p.lineno(1), [p[5]])
+    	p[0] = node.Node('WHILE', None, p.lineno(1), [p[3], p[5]])
     elif p[1] == 'do':
-    	p[0] = node.Node('DO_WHILE', p[5], p.lineno(1), [p[2]])
+    	p[0] = node.Node('DO_WHILE', None, p.lineno(1), [p[2], p[5]])
     elif p[1] == 'for':
-    	p[0] = node.Node('FOR', p[9], p.lineno(1), [p[3], p[5], p[7]])
+    	p[0] = node.Node('FOR', None, p.lineno(1), [p[3], p[5], p[7], p[9]])
 
 
 # jump_statement
@@ -864,7 +864,7 @@ def p_jump_statement(p):
     	if len(p) == 3:
     		p[0] = node.Node('RETURN', None, p.lineno(1))
     	else:
-    		p[0] = node.Node('RETURN', p[2], p.lineno(1))
+    		p[0] = node.Node('RETURN', None, p.lineno(1), [p[2]])
 
 
 # translation-unit
@@ -898,11 +898,11 @@ def p_function_definition(p):
                             | declaration_specifiers declarator declaration_list compound_statement
     '''
     if len(p) == 3:
-    	p[0] = node.Node('FUNC_DEF', p[2], p.lineno(1), [p[1]])
+    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2]])
     elif len(p) == 4:
-    	p[0] = node.Node('FUNC_DEF', p[3], p.lineno(1), [p[1], p[2]])
+    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[2]])
     else:
-    	p[0] = node.Node('FUNC_DEF', p[4], p.lineno(1), [p[1], p[2], p[3]])
+    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[3], p[4]])
 
 
 # empty
@@ -917,10 +917,7 @@ def p_expression_opt(p):
         expression_opt : expression
                        | empty
     '''
-    if p[1].type == 'EMPTY':
-    	p[0] = node.Node('EXPR_OPT', None, p.lineno(0))
-    else:
-    	p[0] = p[1]
+    p[0] = p[1]
 
 
 def p_error(p):
