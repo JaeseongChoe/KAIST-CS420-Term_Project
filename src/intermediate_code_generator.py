@@ -65,8 +65,41 @@ def IRgenerate(node, output):
     output t_2 <- t_4
     output label l_2
     '''
-
-    if node.type == "CAST":
+    if node.type == "ARRAY":
+        reg1 = IRgenerate(node.children[0], output)
+        reg2 = IRgenerate(node.children[1], output)
+        reg_result = new_var()
+        output("r%d = r%d [ r%d ]".format(reg_result, reg1, reg2))
+        return reg_result
+    elif node.type == "FUNCTION":
+        reg1 = IRgenerate(node.children[0], output)
+        IRgenerate(node.children[1], output)
+        reg_result = new_var()
+        n = len(node.children[1].children)
+        output("r%d = CALL r%d %d".format(reg_result, reg1, n))
+        return reg_result
+    elif node.type == "POSTINC":
+        reg1 = IRgenerate(node.children[0], output)
+        TODO()
+    elif node.type == "POSTDEC":
+        TODO()
+    elif node.type == "ARG_EXPR_LIST":
+        TODO()
+        # Store argument using
+        # PARAM r%n
+    elif node.type == "PREINC":
+        TODO()
+    elif node.type == "PREDEC":
+        TODO()
+    elif node.type == "UNARY":
+        reg1 = IRgenerate(node.children[1], output)
+        reg_result = new_var()
+        output("r%d = %s r%d".format(reg_result, node.children[0].value, reg1))
+    elif node.type == "SIZEOF":
+        TODO("differentiate two sizeof call")
+    elif node.type == "UNA_OP":
+        raise ValueError("UNA_OP should not called in IRgenerate")
+    elif node.type == "CAST":
         reg = IRgenerate(node.children[1], output)
         reg_result = new_var()
         output("r%d = CAST %s r%d".format(TODO(), reg))
@@ -229,7 +262,7 @@ def IRgenerate(node, output):
     elif node.type == "EMPTY":
         pass
     elif node.type == "EXPR_OPT":
-        pass     
+        pass
 
 
 
