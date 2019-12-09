@@ -44,12 +44,15 @@ The syntax anlayzer uses Yacc module of the PLY library. Context free grammer wi
 #### Semantic analyzer
 
 The semantic analyzer of the mini-C compiler provides static and type checking features.
+
 - Static checking
   - Check the existence of duplicated identifier error.
   - Check weather the `continue` and `break` statement are located inside loop or not.
 - Type checking
   - Check the types of operands for arithmetic operators.
   - Check the types of destination and source element in assignment operator.
+  
+In both two checking phases, the semantic analyzer insert some cast operations if it need to and possible to match the types of operands.
 
 ### Middle end
 
