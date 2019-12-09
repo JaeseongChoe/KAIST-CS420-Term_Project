@@ -21,6 +21,10 @@ def new_label():
         yield l
         l = l + 1
 
+def extract_type(node):
+    assert(node.type == "DECL_SPEC_LIST")
+    return node.get_value()
+
 def IRgenerate(node, output):
     '''
     This function generates intermediate code for node.
@@ -263,6 +267,8 @@ def IRgenerate(node, output):
         pass
     elif node.type == "EXPR_OPT":
         pass
+    else:
+        raise ValueError("Undefined Node")
 
 
 
