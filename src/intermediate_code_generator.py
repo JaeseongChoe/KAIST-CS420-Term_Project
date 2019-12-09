@@ -9,6 +9,9 @@ _CAL_EXP_SET = set("MUL_EXPR", "ADD_EXPR", "SHIFT_EXPR",
                    "L_OR_EXPR")
 _LIST_EXP_SET = set("COMP_STMT", "DECLARATION_LIST", "STMT_LIST", "TRSL_UNIT")
 
+import node
+import symtab
+
 def new_var():
     y = 0
     while True:
