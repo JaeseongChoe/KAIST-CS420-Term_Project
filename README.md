@@ -1,4 +1,4 @@
-# ARTIDE (Naming is Needed!)
+# ARTIDE: A Really Tiny Intgrated Development Environment
 
 ARTIDE is A Really Tiny Integrated Delopment Enviroment for the mini-C programming language which provide only compiler and debugger. ARTIDE written in Python. ARTIDE was originally start from a term project of compiler design course in KAIST.
 
@@ -8,15 +8,24 @@ ARTIDE is A Really Tiny Integrated Delopment Enviroment for the mini-C programmi
 |week9|~~Presentation (management plan)~~|
 |week10|~~Design internal data structure~~|
 |week11|~~Implement lexical and syntax analyzer~~|
-|week12|~~Report (internal data structure)~~, implement semantic analyzer|
-|week13|Implement intermediate code generator|
+|week12|~~Report (internal data structure)~~, ~~implement semantic analyzer~~|
+|week13|~~Implement intermediate code generator~~|
 |week14|Implement interpreter/debugger and code generator|
 |week15|Final presentation|
 |week16|Final report|
 
 ## mini-C
 
-mini-C specification from TA.
+The mini-C programming language is a proper subset of ANSI C (C89/C90).
+
+The mini-C supports:
+- Primitive data types: `int`, `float`, `double`, `char`, `str` + `array` and `pointer` types for them.
+- Primitive operations: arithmetic, comparison&relational, logical, bitwise, and assignmnet operations. 
+
+The mini-C does not supports:
+- `struct`, `union`, and `enum` types.
+- User defined types.
+- Type qualifiers: `signed`, `unsigned`, `const`, `volatile`, `extern`, `static`, `auto`, and `register`.
 
 ## mini-C compiler
 
