@@ -348,7 +348,9 @@ def p_declaration_specifiers(p):
                                | type_qualifier
                                | type_qualifier declaration_specifiers
     '''
-    if len(p) == 2:
+    if len(p) == 2 and p[1].type == "TYPE_SPEC":
+        p[0] = node.Node('DECL_SPEC_LIST', p[1].value, p.lineno(1), [p[1]])
+    elif len(p) == 2:
         p[0] = node.Node('DECL_SPEC_LIST', None, p.lineno(1), [p[1]])
     else:
         p[0] = p[2]
@@ -590,11 +592,13 @@ def p_pointer(p):
                 | ASTERISK type_qualifier_list pointer
     '''
     if len(p) == 2:
-        p[0] = node.Node("POINTER", None, p.lineno(1))
+        p[0] = node.Node("POINTER", 1, p.lineno(1))
+    elif len(p) == 3 and p[2].type == "TYPE_QUAL_LIST":
+        p[0] = node.Node("POINTER", 1, p.lineno(1), [p[2]])
     elif len(p) == 3:
-        p[0] = node.Node("POINTER", None, p.lineno(1), [p[2]])
+        p[0] = node.Node("POINTER", p[2].value + 1, p.lineno(1), [p[2]])
     else:
-        p[0] = node.Node("POINTER", None, p.lineno(1), [p[2], p[3]])
+        p[0] = node.Node("POINTER", p[3].value + 1, p.lineno(1), [p[2], p[3]])
 
 
 # type-qualifier-list
@@ -680,6 +684,8 @@ def p_abstract_declarator(p):
                              | direct_abstract_declarator
                              | pointer direct_abstract_declarator
     '''
+    # TODO : Support Abstract Declarator
+    # Used in type casting like (int)
     raise UnsupportedFeatureError()
 
 
