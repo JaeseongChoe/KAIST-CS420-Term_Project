@@ -56,7 +56,7 @@ In both two checking phases, the semantic analyzer insert some cast operations i
 
 ### Middle end
 
-Intermediate language generation.
+The middle end of the mini-C compiler is just intermideate code generator. It generates intermideate code as the form of three address code.
 
 ### Back end
 
