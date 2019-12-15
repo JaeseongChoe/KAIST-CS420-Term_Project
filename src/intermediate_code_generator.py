@@ -352,8 +352,16 @@ class intermediate_code_generator:
                 output("\tRET r{}".format(reg_result))
             else:
                 output("\tRET")
+        elif node.type == "TRSL_UNIT":
+            self.symtab.insert_block_table(symtab.SymTabBlock(None))
+            for child in cursor.children:
+                self.IRgenerate(child)
+            self.symtab.remove_block_table()
+            output("start : ")
+            output("\tGOTO l{}".format(self.gototab['main']))
         elif node.type == "FUNC_DEF":
             l_func = self.new_label()
+            output("l{} : ".format(l_func))
             node_func = node.children[1].children[0]
             name_func = node_func.children[0].get_value()
             self.gototab[name_func] = l_func
@@ -378,5 +386,6 @@ if __name__ == "__main__":
     ast = semantic_analyzer.checked_ast
     intermediate_code_generator = intermediate_code_generator()
     intermediate_code_generator.IRgenerate(ast, print)
-    file = open("output.txt", 'a')
-    intermediate_code_generator.IRgenerate(ast, file.write)
+    # file = open("output.txt", 'a')
+    # intermediate_code_generator.IRgenerate(ast, file.write)
+    # file.close()
