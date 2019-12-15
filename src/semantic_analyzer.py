@@ -172,6 +172,9 @@ class semantic_analyzer:
 	def lookup_function(self, function_node, arg_node, line):
 		name = function_node.get_value().get_value()
 		if name == 'printf':
+			args_num = arg_node.children[0].get_value().count('%')
+			if len(arg_node.children) != args_num + 1:
+				raise TypeError('Wrong number of arguments in printf', line)
 			return None
 
 		try:
