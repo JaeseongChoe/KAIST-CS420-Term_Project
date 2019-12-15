@@ -7,7 +7,7 @@ _CAL_EXP_SET = set(["MUL_EXPR", "ADD_EXPR", "SHIFT_EXPR",
                    "REL_EXPR", "EQ_EXPR", "AND_EXPR",
                    "XOR_EXPR", "OR_EXPR", "L_AND_EXPR",
                    "L_OR_EXPR"])
-_LIST_EXP_SET = set(["DECLARATION_LIST", "STMT_LIST", "TRSL_UNIT"])
+_LIST_EXP_SET = set(["DECLARATION_LIST", "STMT_LIST"])
 
 import node
 import symtab
@@ -354,8 +354,8 @@ class intermediate_code_generator:
                 output("\tRET")
         elif node.type == "TRSL_UNIT":
             self.symtab.insert_block_table(symtab.SymTabBlock(None))
-            for child in cursor.children:
-                self.IRgenerate(child)
+            for child in node.children:
+                self.IRgenerate(child, output)
             self.symtab.remove_block_table()
             output("start : ")
             output("\tGOTO l{}".format(self.gototab['main']))
