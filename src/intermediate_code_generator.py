@@ -19,6 +19,7 @@ class intermediate_code_generator:
         self.symtab = symtab.SymTab()
         self.gototab = dict()
         self.looplabelstack = list()
+        self.functab = dict()
         self.var = self.new_var_generator()
         self.label = self.new_label_generator()
     
@@ -88,59 +89,59 @@ class intermediate_code_generator:
             reg1 = self.IRgenerate(node.children[0].get_value(), output)
             reg2 = self.IRgenerate(node.children[1].get_value(), output)
             reg_result = self.new_var()
-            output("\tr{} = r{} [ r{} ]".format(reg_result, reg1, reg2))
+            output("\tr{} = r{} [ r{} ]\n".format(reg_result, reg1, reg2))
             return reg_result
         elif node.type == "FUNCTION":
             reg1 = self.new_var()
             func_name = node.children[0].get_value().get_value()
-            output("\tr{} = {}".format(reg1, func_name))
+            output("\tr{} = {}\n".format(reg1, func_name))
             self.IRgenerate(node.children[1].get_value(), output)
             reg_result = self.new_var()
             n = len(node.children[1].get_value().children)
-            output("\tr{} = CALL r{} {}".format(reg_result, reg1, n))
+            output("\tr{} = CALL r{} {}\n".format(reg_result, reg1, n))
             return reg_result
         elif node.type == "ID":
             return self.symtab.get(node.get_value()).type
         elif node.type == "ICONST" or node.type == "FCONST" or node.type == "CCONST" or node.type == "STR_LITER":
             reg = self.new_var()
-            output("\tr{} = {}".format(reg, node.get_value()))
+            output("\tr{} = {}\n".format(reg, node.get_value()))
             return reg
         elif node.type == "POSTINC":
             reg1 = self.IRgenerate(node.get_value(), output)
             temp_reg = self.new_var()
             reg_result = self.new_var()
-            output("\tr{} = r{}".format(reg_result, reg1))
-            output("\tr{} = 1".format(temp_reg))
-            output("\tr{} = r{} + r{}".format(reg1, reg1, temp_reg))
+            output("\tr{} = r{}\n".format(reg_result, reg1))
+            output("\tr{} = 1\n".format(temp_reg))
+            output("\tr{} = r{} + r{}\n".format(reg1, reg1, temp_reg))
             return reg_result
         elif node.type == "POSTDEC":
             reg1 = self.IRgenerate(node.get_value(), output)
             temp_reg = self.new_var()
             reg_result = self.new_var()
-            output("\tr{} = r{}".format(reg_result, reg1))
-            output("\tr{} = 1".format(temp_reg))
-            output("\tr{} = r{} - r{}".format(reg1, reg1, temp_reg))
+            output("\tr{} = r{}\n".format(reg_result, reg1))
+            output("\tr{} = 1\n".format(temp_reg))
+            output("\tr{} = r{} - r{}\n".format(reg1, reg1, temp_reg))
             return reg_result
         elif node.type == "ARG_EXPR_LIST":
             for child in node.children:
                 reg = self.IRgenerate(child, output)
-                output("\tPARAM r{}".format(reg))
+                output("\tPARAM r{}\n".format(reg))
         elif node.type == "PREINC":
             reg1 = self.IRgenerate(node.children[0], output)
             temp_reg = self.new_var()
-            output("\tr{} = 1".format(temp_reg))
-            output("\tr{} = r{} + r{}".format(reg1, reg1, temp_reg))
+            output("\tr{} = 1\n".format(temp_reg))
+            output("\tr{} = r{} + r{}\n".format(reg1, reg1, temp_reg))
             return reg1
         elif node.type == "PREDEC":
             reg1 = self.IRgenerate(node.children[0], output)
             temp_reg = self.new_var()
-            output("\tr{} = 1".format(temp_reg))
-            output("\tr{} = r{} - r{}".format(reg1, reg1, temp_reg))
+            output("\tr{} = 1\n".format(temp_reg))
+            output("\tr{} = r{} - r{}\n".format(reg1, reg1, temp_reg))
             return reg1
         elif node.type == "UNARY":
             reg1 = self.IRgenerate(node.children[1], output)
             reg_result = self.new_var()
-            output("\tr{} = {} r{}".format(reg_result, node.children[0].value, reg1))
+            output("\tr{} = {} r{}\n".format(reg_result, node.children[0].value, reg1))
         elif node.type == "SIZEOF":
             # TODO : differentiate two sizeof call
             pass
@@ -149,32 +150,39 @@ class intermediate_code_generator:
         elif node.type == "CAST":
             reg = self.IRgenerate(node.children[1], output)
             reg_result = self.new_var()
-            output("\tr{} = CAST {} r{}".format(reg_result, node.children[0].children[0].children[0].get_value(), reg))
+            output("\tr{} = CAST {} r{}\n".format(reg_result, node.children[0].children[0].children[0].get_value(), reg))
             return reg_result
         elif node.type in _CAL_EXP_SET:
             reg1 = self.IRgenerate(node.children[0], output)
             reg2 = self.IRgenerate(node.children[1], output)
             reg3 = self.new_var()
-            output("\tr{} = r{} {} r{}".format(reg3, reg1, node.get_value(), reg2))
+            output("\tr{} = r{} {} r{}\n".format(reg3, reg1, node.get_value(), reg2))
             return reg3
         elif node.type == "TERNARY":
             reg1 = self.IRgenerate(node.children[0], output)
             l1 = self.new_label()
             l2 = self.new_label()
             reg_result = self.new_var()
-            output("\tBFALSE l{} r{}".format(l1, reg1))
+            output("\tBFALSE l{} r{}\n".format(l1, reg1))
             reg2 = self.IRgenerate(node.children[1], output)
-            output("\tr{} = r{}".format(reg_result, reg2))
-            output("\tGOTO l{}".format(l2))
-            output("l{} : ".format(l1))
+            output("\tr{} = r{}\n".format(reg_result, reg2))
+            output("\tGOTO l{}\n".format(l2))
+            output("l{} : \n".format(l1))
             reg3 = self.IRgenerate(node.children[2], output)
-            output("\tr{} = r{}".format(reg_result, reg3))
-            output("l{} : ".format(l2))
+            output("\tr{} = r{}\n".format(reg_result, reg3))
+            output("l{} : \n".format(l2))
             return reg_result
         elif node.type == "ASSIGN_EXPR":
-            reg1 = self.IRgenerate(node.children[0], output)
-            reg2 = self.IRgenerate(node.children[1], output)
-            output("\tr{} {} r{}".format(reg1, node.get_value(), reg2))
+            if node.children[0].type == "ARRAY":
+                array_node = node.children[0]
+                reg1_1 = self.IRgenerate(array_node.children[0].get_value(), output)
+                reg1_2 = self.IRgenerate(array_node.children[1].get_value(), output)
+                reg2 = self.IRgenerate(node.children[1], output)
+                output("\tr{} [ r{} ] = r{}\n".format(reg1_1, reg1_2, reg2))
+            else:
+	            reg1 = self.IRgenerate(node.children[0], output)
+	            reg2 = self.IRgenerate(node.children[1], output)
+	            output("\tr{} {} r{}\n".format(reg1, node.get_value(), reg2))
         elif node.type == "ASSIGN_OP":
             raise ValueError("ASSIGN_OP should not called in IRgenerate")
         elif node.type == "EXPR":
@@ -215,7 +223,7 @@ class intermediate_code_generator:
                 self.symtab.insert(SymTabEntry(child.get_value(), dest_reg))
             elif child.type == "ARR_DECL":
                 self.symtab.insert(SymTabEntry(child.children[0].get_value(), dest_reg))
-            output("\tr{} = r{}".format(dest_reg, src_reg))
+            output("\tr{} = r{}\n".format(dest_reg, src_reg))
             return dest_reg
         elif node.type == "STORAGE_SPEC":
             raise ValueError("STORAGE_SPEC should not called in IRgenerate")
@@ -250,16 +258,16 @@ class intermediate_code_generator:
                 self.IRgenerate(init, output)
         elif node.type == "LABEL":
             v1 = node.get_value()
-            output("l{}".format(v1))
+            output("l{} : \n".format(v1))
             self.gototab[node.children[0]] = v1
             return self.IRgenerate(node.children[0], output)
         elif node.type == "CASE":
             reg1 = self.IRgenerate(node.children[0], output)
             # TODO : Check reg1 equals match value
             l_next = self.new_label()
-            output("\nBNE l{} r{} r{}".format(l_next, reg_match, reg1))
+            output("\tBNE l{} r{} r{}\n".format(l_next, reg_match, reg1))
             reg_result = self.IRgenerate(node.children[1], output)
-            output("l{} : ".format(l_next))
+            output("l{} : \n".format(l_next))
         elif node.type == "DEFAULT":
             return self.IRgenerate(node.children[0], output)
         elif node.type == "STMT_LIST":
@@ -286,19 +294,19 @@ class intermediate_code_generator:
             if len(node.children) == 2:
                 reg1 = self.IRgenerate(node.children[0], output)
                 l1 = self.new_label()
-                output("\tBFALSE l{} r{}".format(l1, reg1))
+                output("\tBFALSE l{} r{}\n".format(l1, reg1))
                 self.IRgenerate(node.children[1], output)
-                output("l{} : ".format(l1))
+                output("l{} : \n".format(l1))
             else:
                 reg1 = self.IRgenerate(node.children[0], output)
                 l1 = self.new_label()
                 l2 = self.new_label()
-                output("\tBFALSE l{} r{}".format(l1, reg1))
+                output("\tBFALSE l{} r{}\n".format(l1, reg1))
                 self.IRgenerate(node.children[1], output)
-                output("\tGOTO l{}".format(l2))
-                output("l{} : ".format(l1))
+                output("\tGOTO l{}\n".format(l2))
+                output("l{} : \n".format(l1))
                 self.IRgenerate(node.children[2], output)
-                output("l{} : ".format(l2))
+                output("l{} : \n".format(l2))
         elif node.type == "SWITCH":
             reg1 = self.IRgenerate(node.children[0], output)
             TODO()
@@ -306,62 +314,62 @@ class intermediate_code_generator:
             l1 = self.new_label()
             l2 = self.new_label()
             self.looplabelstack.append((l1, l2))
-            output("l{} : ".format(l1))
+            output("l{} : \n".format(l1))
             reg1 = self.IRgenerate(node.children[0], output)
-            output("\tBFALSE l{} r{}".format(l2, reg1))
+            output("\tBFALSE l{} r{}\n".format(l2, reg1))
             self.IRgenerate(node.children[1], output)
-            output("\tGOTO l{}".format(l1))
-            output("l{} : ".format(l2))
+            output("\tGOTO l{}\n".format(l1))
+            output("l{} : \n".format(l2))
             self.looplabelstack.pop()
         elif node.type == "DO_WHILE":
             l1 = self.new_label()
             l2 = self.new_label()
             self.looplabelstack.append((l1, l2))
-            output("l{} : ".format(l1))
+            output("l{} : \n".format(l1))
             self.IRgenerate(node.children[0], output)
             reg1 = self.IRgenerate(node.children[1], output)
-            output("\tBTRUE l{} r{}".format(l1, reg1))
-            output("l{} : ".format(l2))
+            output("\tBTRUE l{} r{}\n".format(l1, reg1))
+            output("l{} : \n".format(l2))
             self.looplabelstack.pop()
         elif node.type == "FOR":
             l1 = self.new_label()
             l2 = self.new_label()
             self.looplabelstack.append((l1, l2))
             self.IRgenerate(node.children[0], output)
-            output("l{} : ".format(l1))
+            output("l{} : \n".format(l1))
             reg2 = self.IRgenerate(node.children[1], output)
-            output("\tBFALSE l{} r{}".format(l2, reg2))
+            output("\tBFALSE l{} r{}\n".format(l2, reg2))
             self.IRgenerate(node.children[3], output)
             self.IRgenerate(node.children[2], output)
-            output("\tGOTO l{}".format(l1))
-            output("l{} : ".format(l2))
+            output("\tGOTO l{}\n".format(l1))
+            output("l{} : \n".format(l2))
             self.looplabelstack.pop()
         elif node.type == "\tGOTO":
-            output("\tGOTO l{}".format(self.gototab[node.children[0]]))
+            output("\tGOTO l{}\n".format(self.gototab[node.children[0]]))
             # Create \tGOTO table
         elif node.type == "CONTINUE":
-            output("\tGOTO l{}".format(self.looplabelstack[-1][0]))
+            output("\tGOTO l{}\n".format(self.looplabelstack[-1][0]))
             # create loop_start_label globally
         elif node.type == "BREAK":
-            output("\tGOTO l{}".format(self.looplabelstack[-1][1]))
+            output("\tGOTO l{}\n".format(self.looplabelstack[-1][1]))
             self.looplabelstack.pop()
             # create loop_end_label globally
         elif node.type == "RETURN":
             if len(node.children) == 1:
                 reg_result = self.IRgenerate(node.children[0], output)
-                output("\tRET r{}".format(reg_result))
+                output("\tRET r{}\n".format(reg_result))
             else:
-                output("\tRET")
+                output("\tRET\n")
         elif node.type == "TRSL_UNIT":
             self.symtab.insert_block_table(symtab.SymTabBlock(None))
             for child in node.children:
                 self.IRgenerate(child, output)
             self.symtab.remove_block_table()
-            output("start : ")
-            output("\tGOTO l{}".format(self.gototab['main']))
+            output("start : \n")
+            output("\tGOTO l{}\n".format(self.gototab['main']))
         elif node.type == "FUNC_DEF":
             l_func = self.new_label()
-            output("l{} : ".format(l_func))
+            output("l{} : \n".format(l_func))
             node_func = node.children[1].children[0]
             name_func = node_func.children[0].get_value()
             self.gototab[name_func] = l_func
@@ -372,7 +380,9 @@ class intermediate_code_generator:
                     if len(param.children) == 2:
                         param_name = param.children[1].children[-1].get_value()
                         dest_reg = self.new_var()
+                        arg_list.append(dest_reg)
                         self.symtab.insert(symtab.SymTabEntry(param_name, dest_reg))
+            self.functab[name_func] = arg_list
             result = self.IRgenerate(node.children[-1], output)
             self.symtab.remove_block_table()
             return result
@@ -384,8 +394,11 @@ class intermediate_code_generator:
 
 if __name__ == "__main__":
     ast = semantic_analyzer.checked_ast
-    intermediate_code_generator = intermediate_code_generator()
-    intermediate_code_generator.IRgenerate(ast, print)
-    # file = open("output.txt", 'a')
-    # intermediate_code_generator.IRgenerate(ast, file.write)
-    # file.close()
+
+    # intermediate_code_generator_print = intermediate_code_generator()
+    # intermediate_code_generator_print.IRgenerate(ast, print)
+
+    file = open("output.txt", 'w')
+    intermediate_code_generator_write = intermediate_code_generator()
+    intermediate_code_generator_write.IRgenerate(ast, file.write)
+    file.close()
