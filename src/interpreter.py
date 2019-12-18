@@ -24,7 +24,7 @@ class RuntimeError(Exception):
         print("Run-time error : line " + str(lineno))
         self.msg = msg + " at " + str(lineno) 
 
-class interpreter:
+class interpreter_class:
 
     def __init__(self, ast, size):
         self.ast = ast
@@ -225,12 +225,29 @@ class interpreter:
                                             else:
                                                 raise RuntimeError("Unknown string literal", self.code_line)
                                     else:
-                                        print(str_literal)
+                                        pre = 0
+                                        post = 0
+                                        result_str = str_literal
+                                        if str_literal[-2:] == "\\n":
+                                            post = 1
+                                            result_str = result_str[:-2]
+                                        if str_literal[:2] == "\\n":
+                                            pre = 1
+                                            result_str = result_str[2:]
+                                        if post:
+                                            if pre:
+                                                print("")
+                                            print(result_str)
+                                        else:
+                                            if pre:
+                                                print("")
+                                            print(result_str, end = "")
                                 else:
                                     try:
                                         print(self.paramlist[0])
                                     except:
                                         raise RuntimeError("Unknown string literal", self.code_line)
+                                self.paramlist = []
                             else:
                                 try:
                                     param_list = self.functab[func_name][0]
@@ -273,7 +290,10 @@ class interpreter:
                         elif current_line[2][0] == '\'':
                             src_value = current_line[2][1:-1]
                         elif current_line[2][0] == '\"':
-                            src_value = current_line[2][1:-1]
+                            str_value = ""
+                            for i in range(2, len(current_line)):
+                                str_value += current_line[i] + " "
+                            src_value = str_value[1:-2]
                         elif current_line[2][0].isalpha():
                             src_value = current_line[2]
                         self.memory[dest_addr] = src_value
@@ -340,7 +360,7 @@ def preprocess(code_dir):
 
     # Initialize semantic analyzer
     type_checker = semantic_analyzer.semantic_analyzer(ast, symtab.SymTab())
-    return interpreter(type_checker.check(), line_number)
+    return interpreter_class(type_checker.check(), line_number)
 
 if __name__ == "__main__":
 
