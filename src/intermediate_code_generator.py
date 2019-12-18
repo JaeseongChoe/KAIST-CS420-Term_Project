@@ -421,6 +421,4 @@ if __name__ == "__main__":
     file = open("ic_output.txt", 'w')
     intermediate_code_generator_write = intermediate_code_generator()
     intermediate_code_generator_write.IRgenerate(checked_ast, file.write)
-    print(intermediate_code_generator_write.linetab)
-    print(intermediate_code_generator_write.functab)
     file.close()
