@@ -1,5 +1,5 @@
-SYMTAB_ERROR_DUP_DECL = "redeclaration of '%s' with no linkage"
-SYMTAB_ERROR_UNDEF_ID = "'%s' undeclared"
+SYMTAB_ERROR_DUP_DECL = "redeclaration of {} with no linkage"
+SYMTAB_ERROR_UNDEF_ID = "{} undeclared"
 
 
 class SymTabError(Exception):
@@ -12,7 +12,7 @@ class SymTabError(Exception):
 
     def __init__(self, expr, msg):
         self.expr = expr
-        self.msg = msg % expr
+        self.msg = msg.format(expr)
 
 
 class DupDeclError(SymTabError):
@@ -54,7 +54,7 @@ class SymTabBlock:
         try:
             return self.table[id]
         except KeyError:
-            raise UndefIdError(id, SYMTAB_ERROR_UNDEF_ID)
+            return None
 
 
 class SymTab:
@@ -68,7 +68,6 @@ class SymTab:
         self.cur = block_table
 
     def remove_block_table(self):
-        self.cur.prev.pop(self.cur)
         self.cur = self.cur.prev
 
     def insert(self, symbol):
@@ -81,8 +80,8 @@ class SymTab:
         table = self.cur
         while table != None:
             entry = table.get(id)
-            if entry != None:
+            if entry == None:
                 table = table.prev
             else:
                 return entry
-        return None
+        raise UndefIdError(id, SYMTAB_ERROR_UNDEF_ID)

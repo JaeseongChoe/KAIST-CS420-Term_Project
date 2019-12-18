@@ -15,7 +15,7 @@ class Node:
         if ind is None:
             self.children.append(child)
         else:
-            self.children.insert(child, ind)
+            self.children.insert(ind, child)
 
     def remove_child(self, child):
         self.children.remove(child)

@@ -97,7 +97,7 @@ def t_CCONST(t):
 
 
 def t_FCONST(t):
-    r'(\d*\.?\d+) ((e|E)(\+|-)?\d+)? (f|l|F|L)?'
+    r'(\d*\.\d+) ((e|E)(\+|-)?\d+)? (f|l|F|L)?'
     return t
 
 

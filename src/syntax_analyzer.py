@@ -63,16 +63,15 @@ def p_postfix_expression(p):
         else:
             type = 'FUNCTION'
         id = node.Node(type, p[1], p.lineno(1))
-        index = node.Node('INDEX', P[3].value, p.lineno(3))
+        index = node.Node('INDEX', p[3], p.lineno(3))
         p[0] = node.Node(type, None, p.lineno(2), [id, index])
     elif len(p) == 4:
-        # Todo
-        raise Error
+        raise UnsupportedFeatureError()
     elif len(p) == 3:
         if p[2] == '++':
-            p[0] = node.Node('POSTINC', p[1].value, p.lineno(2))
+            p[0] = node.Node('POSTINC', p[1], p.lineno(2))
         else:
-            p[0] = node.Node('POSTDEC', p[1].value, p.lineno(2))
+            p[0] = node.Node('POSTDEC', p[1], p.lineno(2))
 
 
 # argument-expression-list:
@@ -323,7 +322,9 @@ def p_expression(p):
 # constant-expression
 def p_constant_expression(p):
     'constant_expression : conditional_expression'
-    p[0] = p[1]
+    # This seems redundant, but it is necessary so that we can check whether it is really constant.
+    # Note that conditional_expression may not be constant, so we need to check.
+    p[0] = node.Node("CONST_EXP", None, p.lineno(1), [p[1]])
 
 
 # declaration
@@ -348,9 +349,7 @@ def p_declaration_specifiers(p):
                                | type_qualifier
                                | type_qualifier declaration_specifiers
     '''
-    if len(p) == 2 and p[1].type == "TYPE_SPEC":
-        p[0] = node.Node('DECL_SPEC_LIST', p[1].value, p.lineno(1), [p[1]])
-    elif len(p) == 2:
+    if len(p) == 2:
         p[0] = node.Node('DECL_SPEC_LIST', None, p.lineno(1), [p[1]])
     else:
         p[0] = p[2]
@@ -424,11 +423,11 @@ def p_struct_or_union_specifier(p):
                                   | struct_or_union ID LBRACE struct_declaration_list RBRACE
     '''
     if len(p) == 3:
-        p[0] = node.Node(p[1].upper() + "_SPEC", None, p.lineno(1), [p[2]])
+        p[0] = node.Node(p[1].upper() + "_SPEC", p[2], p.lineno(1))
     elif len(p) == 5:
         p[0] = node.Node(p[1].upper() + "_SPEC", None, p.lineno(1), [p[3]])
     else:
-        p[0] = node.Node(p[1].upper() + "_SPEC", None, p.lineno(1), [p[2], p[4]])
+        p[0] = node.Node(p[1].upper() + "_SPEC", p[2], p.lineno(1), [p[4]])
 
 
 # struct-or-union
@@ -482,8 +481,8 @@ def p_struct_declarator_list(p):
     if len(p) == 2:
         p[0] = node.Node('STRUCT_DECLARATOR_LIST', None, p.lineno(1), [p[1]])
     else:
-        p[0] = p[3]
-        p[0].add_child(p[1], 0)
+        p[0] = p[1]
+        p[0].add_child(p[3])
 
 
 # struct-declarator
@@ -494,11 +493,11 @@ def p_struct_declarator(p):
                           | declarator COLON constant_expression
     '''
     if len(p) == 2:
-        raise NotImplementedError()
+        raise UnsupportedFeatureError()
     elif len(p) == 3:
-        raise NotImplementedError()
+        raise UnsupportedFeatureError()
     else:
-        raise NotImplementedError()
+        raise UnsupportedFeatureError()
 
 
 # enum-specifier
@@ -509,9 +508,9 @@ def p_enum_specifier(p):
                        | ENUM ID
     '''
     if len(p) == 5:
-        raise NotImplementedError()
+        raise UnsupportedFeatureError()
     elif len(p) == 6:
-        raise NotImplementedError()
+        raise UnsupportedFeatureError()
 
 
 # enumerator-list:
@@ -534,9 +533,9 @@ def p_enumerator(p):
                    | ECONST ASSIGN constant_expression
     '''
     if len(p) == 2:
-        raise NotImplementedError()
+        raise UnsupportedFeatureError()
     else:
-        raise NotImplementedError()
+        raise UnsupportedFeatureError()
 
 
 # type-qualifier
@@ -557,7 +556,7 @@ def p_declarator(p):
     if len(p) == 2:
         p[0] = node.Node('DECL', None, p.lineno(1), [p[1]])
     else:
-        p[0] = node.Node('POINT_DECL', '*', p.lineno(2), [p[2]])
+        p[0] = node.Node('DECL', None, p.lineno(2), [p[1], p[2]])
 
 
 # direct-declarator
@@ -576,12 +575,12 @@ def p_direct_declarator(p):
         p[0] = p[2]
     elif len(p) == 4:
         p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1]])
-    elif len(p) == 5 and p[3] == '[':
+    elif len(p) == 5 and p[2] == '[':
         p[0] = node.Node("ARR_DECL", None, p.lineno(1), [p[1], p[3]])
-    elif len(p) == 5 and p[3].type == "???": #TODO : parameter_type_list
+    elif len(p) == 5 and p[3].type == "PARAM_LIST":
         p[0] = node.Node("FUN_DECL", None, p.lineno(1), [p[1], p[3]])
     else:
-        p[0] = node.Node("TODO", None, p.lineno(1), [p[1], p[3]])
+        p[0] = node.Node("FUN_APP", None, p.lineno(1), [p[1], p[3]])
 
 # pointer
 def p_pointer(p):
@@ -592,13 +591,17 @@ def p_pointer(p):
                 | ASTERISK type_qualifier_list pointer
     '''
     if len(p) == 2:
-        p[0] = node.Node("POINTER", 1, p.lineno(1))
-    elif len(p) == 3 and p[2].type == "TYPE_QUAL_LIST":
-        p[0] = node.Node("POINTER", 1, p.lineno(1), [p[2]])
+        p[0] = node.Node("POINTER", None, p.lineno(1), [node.Node("ASTERISK", None, p.lineno(1))])
+    elif len(p) == 3 and p[2].type == "POINTER":
+        p[0] = p[2]
+        p[0].add_child(node.Node("ASTERISK", None, p.lineno(1)), 0)
     elif len(p) == 3:
-        p[0] = node.Node("POINTER", p[2].value + 1, p.lineno(1), [p[2]])
+        p[0] = node.Node("POINTER", None, p.lineno(1), [node.Node("ASTERISK", None, p.lineno(1)), p[2]])
     else:
-        p[0] = node.Node("POINTER", p[3].value + 1, p.lineno(1), [p[2], p[3]])
+        p[0] = p[3]
+        p[0].add_child(p[2], 0)
+        p[0].add_child(node.Node("ASTERISK", None, p.lineno(1)), 0)
+
 
 
 # type-qualifier-list
@@ -684,8 +687,6 @@ def p_abstract_declarator(p):
                              | direct_abstract_declarator
                              | pointer direct_abstract_declarator
     '''
-    # TODO : Support Abstract Declarator
-    # Used in type casting like (int)
     raise UnsupportedFeatureError()
 
 
@@ -707,7 +708,7 @@ def p_direct_abstract_declarator(p):
 
 # typedef-name
 def p_typedef_name(p):
-    'typedef_name : ID'
+    'typedef_name : TYPEID'
     p[0] = node.Node("TYPEDEF_NAME", p[1], p.lineno(1))
 
 
@@ -757,12 +758,12 @@ def p_labeled_statement(p):
                           | CASE constant_expression COLON statement
                           | DEFAULT COLON statement
     '''
-    if isinstance(p[1], node.Node):
-    	p[0] = node.Node('LABEL', p[1], p.lineno(1), [p[3]])
-    elif p[1] == 'case':
+    if p[1] == 'case':
     	p[0] = node.Node('CASE', None, p.lineno(1), [p[2], p[4]])
     elif p[1] == 'default':
     	p[0] = node.Node('DEFAULT', None, p.lineno(1), [p[3]])
+    else:
+        p[0] = node.Node('LABEL', p[1], p.lineno(1), [p[3]])
 
 
 # compound-statement
@@ -779,7 +780,7 @@ def p_compound_statement(p):
     elif len(p) == 5:
     	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2], p[3]])
     else:
-    	p[0] = p[2]
+    	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2]])
 
 
 # declaration-list
@@ -791,7 +792,7 @@ def p_declaration_list(p):
     if len(p) == 2:
     	p[0] = node.Node("DECLARATION_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -804,7 +805,7 @@ def p_statement_list(p):
     if len(p) == 2:
     	p[0] = node.Node("STMT_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -861,7 +862,7 @@ def p_jump_statement(p):
                        | RETURN expression SEMI_COLON
     '''
     if p[1] == 'goto':
-    	p[0] = node.Node('GOTO', p[2], p.lineno(1))
+    	p[0] = node.Node('GOTO', None, p.lineno(1), [p[2]])
     elif p[1] == 'continue':
     	p[0] = node.Node('CONTINUE', None, p.lineno(1))
     elif p[1] == 'break':
@@ -882,7 +883,7 @@ def p_translation_unit(p):
     if len(p) == 2:
     	p[0] = node.Node("TRSL_UNIT", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -906,7 +907,7 @@ def p_function_definition(p):
     if len(p) == 3:
     	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2]])
     elif len(p) == 4:
-    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[2]])
+    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[3]])
     else:
     	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[3], p[4]])
 
@@ -923,28 +924,33 @@ def p_expression_opt(p):
         expression_opt : expression
                        | empty
     '''
-    p[0] = p[1]
+    if p[1].type == 'EMPTY':
+    	p[0] = node.Node('EXPR_OPT', None, p.lineno(0))
+    else:
+    	p[0] = p[1]
 
 
 def p_error(p):
-    print("Whoa. We're hosed")
-    print("lineno: %d, pos: %d" % (p.lineno, p.lexpos))
+    print("Syntax error : line {}".format(p.lineno))
 
 
 import profile
 # Build the grammar
 
-yacc.yacc()
+parser = yacc.yacc()
 
-while 1:
-    try:
-        s = input('expr > ')
-    except EOFError:
-        break
-    if not s:
-        continue
-    yacc.parse(s)
+if __name__ == "__main__":
+	
+	yacc.yacc()
+	while 1:
+	    try:
+	        s = input('expr > ')
+	    except EOFError:
+	        break
+	    if not s:
+	        continue
+	    yacc.parse(s)
 
-#yacc.yacc(method='LALR',write_tables=False,debug=False)
+	# yacc.yacc(method='LALR',write_tables=False,debug=False)
 
-#profile.run("yacc.yacc(method='LALR')")
+	#profile.run("yacc.yacc(method='LALR')")
