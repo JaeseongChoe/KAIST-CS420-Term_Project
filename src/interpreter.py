@@ -401,10 +401,12 @@ if __name__ == "__main__":
             elif interpreter.is_type(command_list[1], int):
                 interpreter.run(int(command_list[1]))
             else:
-                print("given input is wrong")
+                print("Incorrect command usage : try 'next [lines]'")
         elif command_list[0] == "print":
             if len(command_list) < 2:
-                print("given input is wrong")
+                print("Incorrect command usage : try 'print [variable]'")
+            elif not command_list[1][0].isalpha():
+            	print("Invalid typing of the variable name")
             else:
                 id_input = command_list[1]
                 if id_input[0] == '&':
@@ -413,7 +415,7 @@ if __name__ == "__main__":
                         src_reg = interpreter.symtab.get(id_input).type
                         print(src_reg[1:])
                     except:
-                        print("given identifier does not exist")
+                        print("Invisible variable")
                 if id_input[0] == '*':
                     id_input = id_input[1:]
                     try:
@@ -426,7 +428,7 @@ if __name__ == "__main__":
                         else:
                             print(print_val)
                     except:
-                        print("given identifier does not exist")
+                        print("Invisible variable")
                 else:
                     try:
                         src_reg = interpreter.symtab.get(id_input).type
@@ -439,7 +441,9 @@ if __name__ == "__main__":
                         print("given identifier does not exist")
         elif command_list[0] == "trace":
             if len(command_list) < 2:
-                print("given input is wrong")
+                print("Incorrect command usage : try 'trace [variable]'")
+            elif not command_list[1][0].isalpha():
+            	print("Invalid typing of the variable name")
             else:
                 id_input = command_list[1]
                 try:
@@ -453,8 +457,8 @@ if __name__ == "__main__":
                         else:
                             print("{} = {} at line {}".format(id_input, history[1], history[0]))
                 except:
-                    print("given identifier does not exist")
+                    print("Invisible variable")
         elif command_list[0] == "exit":
             break
         else:
-            print("unknown command")
+            print("Unknown command")
