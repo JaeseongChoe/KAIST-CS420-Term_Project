@@ -225,23 +225,12 @@ class interpreter_class:
                                             else:
                                                 raise RuntimeError("Unknown string literal", self.code_line)
                                     else:
-                                        pre = 0
-                                        post = 0
-                                        result_str = str_literal
-                                        if str_literal[-2:] == "\\n":
-                                            post = 1
-                                            result_str = result_str[:-2]
-                                        if str_literal[:2] == "\\n":
-                                            pre = 1
-                                            result_str = result_str[2:]
-                                        if post:
-                                            if pre:
-                                                print("")
-                                            print(result_str)
-                                        else:
-                                            if pre:
-                                                print("")
-                                            print(result_str, end = "")
+                                    	result_str_list = str_literal.split("\\n")
+                                    	for i in range(len(result_str_list)):
+                                    		if i == len(result_str_list) - 1:
+                                    			print(result_str_list[i], end = "")
+                                    		else:
+                                    			print(result_str_list[i])
                                 else:
                                     try:
                                         print(self.paramlist[0])
