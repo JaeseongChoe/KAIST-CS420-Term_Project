@@ -752,11 +752,11 @@ def p_labeled_statement(p):
                           | DEFAULT COLON statement
     '''
     if isinstance(p[1], node.Node):
-    	p[0] = node.Node('LABEL', p[1], p.lineno(1), [p[3]])
+        p[0] = node.Node('LABEL', p[1], p.lineno(1), [p[3]])
     elif p[1] == 'case':
-    	p[0] = node.Node('CASE', None, p.lineno(1), [p[2], p[4]])
+        p[0] = node.Node('CASE', None, p.lineno(1), [p[2], p[4]])
     elif p[1] == 'default':
-    	p[0] = node.Node('DEFAULT', None, p.lineno(1), [p[3]])
+        p[0] = node.Node('DEFAULT', None, p.lineno(1), [p[3]])
 
 
 # compound-statement
@@ -769,11 +769,11 @@ def p_compound_statement(p):
     '''
 
     if len(p) == 3:
-    	p[0] = node.Node('COMP_STMT', None, p.lineno(1))
+        p[0] = node.Node('COMP_STMT', None, p.lineno(1))
     elif len(p) == 5:
-    	p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2], p[3]])
+        p[0] = node.Node('COMP_STMT', None, p.lineno(1), [p[2], p[3]])
     else:
-    	p[0] = p[2]
+        p[0] = p[2]
 
 
 # declaration-list
@@ -783,9 +783,9 @@ def p_declaration_list(p):
                          | declaration_list declaration
     '''
     if len(p) == 2:
-    	p[0] = node.Node("DECLARATION_LIST", None, p.lineno(1), [p[1]])
+        p[0] = node.Node("DECLARATION_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -796,9 +796,9 @@ def p_statement_list(p):
                        | statement_list statement
     '''
     if len(p) == 2:
-    	p[0] = node.Node("STMT_LIST", None, p.lineno(1), [p[1]])
+        p[0] = node.Node("STMT_LIST", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -809,9 +809,9 @@ def p_expression_statement(p):
                              | expression SEMI_COLON
     '''
     if len(p) == 2:
-    	p[0] = node.Node('EXPR_STMT', None, p.lineno(1))
+        p[0] = node.Node('EXPR_STMT', None, p.lineno(1))
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
 
 
 # selection-statement
@@ -822,12 +822,12 @@ def p_selection_statement(p):
                             | SWITCH LPAREN expression RPAREN statement
     '''
     if p[1] == 'if':
-    	if len(p) == 6:
-    		p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5]])
-    	else:
-    		p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5], p[7]])
+        if len(p) == 6:
+            p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5]])
+        else:
+            p[0] = node.Node('IF', None, p.lineno(1), [p[3], p[5], p[7]])
     elif p[1] == 'switch':
-    	p[0] = node.Node('SWITCH', None, p.lineno(1), [p[3], p[5]])
+        p[0] = node.Node('SWITCH', None, p.lineno(1), [p[3], p[5]])
 
 
 # iteration_statement
@@ -838,11 +838,11 @@ def p_iteration_statement(p):
                             | FOR LPAREN expression_opt SEMI_COLON expression_opt SEMI_COLON expression_opt RPAREN statement
     '''
     if p[1] == 'while':
-    	p[0] = node.Node('WHILE', None, p.lineno(1), [p[3], p[5]])
+        p[0] = node.Node('WHILE', None, p.lineno(1), [p[3], p[5]])
     elif p[1] == 'do':
-    	p[0] = node.Node('DO_WHILE', None, p.lineno(1), [p[2], p[5]])
+        p[0] = node.Node('DO_WHILE', None, p.lineno(1), [p[2], p[5]])
     elif p[1] == 'for':
-    	p[0] = node.Node('FOR', None, p.lineno(1), [p[3], p[5], p[7], p[9]])
+        p[0] = node.Node('FOR', None, p.lineno(1), [p[3], p[5], p[7], p[9]])
 
 
 # jump_statement
@@ -855,16 +855,16 @@ def p_jump_statement(p):
                        | RETURN expression SEMI_COLON
     '''
     if p[1] == 'goto':
-    	p[0] = node.Node('GOTO', p[2], p.lineno(1))
+        p[0] = node.Node('GOTO', p[2], p.lineno(1))
     elif p[1] == 'continue':
-    	p[0] = node.Node('CONTINUE', None, p.lineno(1))
+        p[0] = node.Node('CONTINUE', None, p.lineno(1))
     elif p[1] == 'break':
-    	p[0] = node.Node('BREAK', None, p.lineno(1))
+        p[0] = node.Node('BREAK', None, p.lineno(1))
     elif p[1] == 'return':
-    	if len(p) == 3:
-    		p[0] = node.Node('RETURN', None, p.lineno(1))
-    	else:
-    		p[0] = node.Node('RETURN', None, p.lineno(1), [p[2]])
+        if len(p) == 3:
+            p[0] = node.Node('RETURN', None, p.lineno(1))
+        else:
+            p[0] = node.Node('RETURN', None, p.lineno(1), [p[2]])
 
 
 # translation-unit
@@ -874,9 +874,9 @@ def p_translation_unit(p):
                          | translation_unit external_declaration
     '''
     if len(p) == 2:
-    	p[0] = node.Node("TRSL_UNIT", None, p.lineno(1), [p[1]])
+        p[0] = node.Node("TRSL_UNIT", None, p.lineno(1), [p[1]])
     else:
-    	p[0] = p[1]
+        p[0] = p[1]
         p[0].add_child(p[2])
 
 
@@ -898,11 +898,11 @@ def p_function_definition(p):
                             | declaration_specifiers declarator declaration_list compound_statement
     '''
     if len(p) == 3:
-    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2]])
+        p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2]])
     elif len(p) == 4:
-    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[2]])
+        p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[2]])
     else:
-    	p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[3], p[4]])
+        p[0] = node.Node('FUNC_DEF', None, p.lineno(1), [p[1], p[2], p[3], p[4]])
 
 
 # empty
@@ -930,14 +930,15 @@ import profile
 
 yacc.yacc()
 
-while 1:
-    try:
-        s = input('expr > ')
-    except EOFError:
-        break
-    if not s:
-        continue
-    yacc.parse(s)
+if __name__ == "__main__":
+    while 1:
+        try:
+            s = input('expr > ')
+        except EOFError:
+            break
+        if not s:
+            continue
+        yacc.parse(s)
 
 #yacc.yacc(method='LALR',write_tables=False,debug=False)
 
