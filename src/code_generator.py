@@ -66,7 +66,7 @@ class code_generator:
             reg1 = self.new_var()
             func_name = node.children[0].get_value().get_value()
             output("\tr{} = {}\n".format(reg1, func_name)); self.linetab.append(node.lineno)
-            self.generate(node.children[1].get_value(), output)
+            self.remove_reg(self.generate(node.children[1].get_value(), output))
             reg_result = self.new_var()
             n = len(node.children[1].get_value().children)
             output("\tr{} = CALL r{} {}\n".format(reg_result, reg1, n)); self.linetab.append(node.lineno)
@@ -163,9 +163,9 @@ class code_generator:
                 output("\tr{} [ r{} ] = r{}\n".format(reg1_1, reg1_2, reg2)); self.linetab.append(node.lineno)
                 self.remove_reg([reg1_1, reg1_2, reg2])
             else:
-	            reg1 = self.generate(node.children[0], output)
-	            reg2 = self.generate(node.children[1], output)
-	            output("\tr{} {} r{}\n".format(reg1, node.get_value(), reg2)); self.linetab.append(node.lineno)
+                reg1 = self.generate(node.children[0], output)
+                reg2 = self.generate(node.children[1], output)
+                output("\tr{} {} r{}\n".format(reg1, node.get_value(), reg2)); self.linetab.append(node.lineno)
                 self.remove_reg([reg1, reg2])
         elif node.type == "ASSIGN_OP":
             raise ValueError("ASSIGN_OP should not called in generate")
@@ -176,9 +176,9 @@ class code_generator:
             return reg1 # Maybe not
         elif node.type == "DECLARATION_LIST":
             for child in node.children:
-                self.generate(child, output)
+                self.remove_reg(self.generate(child, output))
         elif node.type == "DECLARATION":
-            self.generate(node.children[1], output)
+            self.remove_reg(self.generate(node.children[1], output))
         elif node.type == "DECL_SPEC_LIST":
             raise ValueError("DECL_SPEC_LIST should not called in generate")
         elif node.type == "INIT_DECL_LIST":
@@ -277,6 +277,7 @@ class code_generator:
         elif node.type in _LIST_EXP_SET:
             reg_result = 0
             for child in node.children:
+                self.remove_reg(reg_result)
                 reg_result = self.generate(child, output)
             return reg_result
         elif node.type == "EXPR_STMT":
@@ -287,6 +288,7 @@ class code_generator:
                 l1 = self.new_label()
                 output("\tBFALSE l{} r{}\n".format(l1, reg1)); self.linetab.append(node.lineno)
                 self.remove_reg(self.generate(node.children[1], output))
+                self.remove_reg(reg1)
                 output("l{} : \n".format(l1)); self.linetab.append(node.lineno)
             else:
                 reg1 = self.generate(node.children[0], output)
@@ -389,7 +391,7 @@ class code_generator:
 
 
 if __name__ == "__main__":
-	# Open the source code
+    # Open the source code
     f = open("../test/mandatory_example.c", 'r')
     s = f.read()
     f.close()
