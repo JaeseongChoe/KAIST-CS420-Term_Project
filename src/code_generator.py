@@ -45,9 +45,9 @@ class code_generator:
         if reg_num is None:
             return
         elif type(reg_num) is int:
-            reg_used -= [reg_num]
+            self.reg_used -= set([reg_num])
         elif type(reg_num) is list:
-            reg_used -= reg_num
+            self.reg_used -= set(reg_num)
         elif type(reg_num) is not str:
             raise TypeError("")
 
@@ -277,6 +277,7 @@ class code_generator:
             output("\t<SCOPE>\n"); self.linetab.append(node.lineno)
             output("\trsp = rsp + {}".format(self.stack_pointer[-1])); self.linetab.append(node.lineno)
             self.stack_pointer.append(0)
+            reg_result = 0
             for child in node.children:
                 self.remove_reg(reg_result)
                 reg_result = self.generate(child, output)
