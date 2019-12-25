@@ -9,13 +9,17 @@
 \usepackage{tikz}
 \usepackage{dirtree}
 \usepackage{hyperref}
+\usepackage[maxbibnames=10]{biblatex}
 
 \hypersetup{
 	colorlinks=true,
 	linkcolor=blue,
-	filecolor=blue,      
+	filecolor=blue,
 	urlcolor=blue,
+	citecolor=blue,
 }
+
+\addbibresource{references.bib}
 
 \newcommand{\code}[1]{\texttt{#1}}
 
@@ -63,6 +67,7 @@
 		\centering
 		\includegraphics[width=0.6\textwidth]{"../img/polar bear 2".png}
 		\caption{Polar bears.}
+		\label{fig: polar bears}
 	\end{figure}
 	
 	\subsection{Directory structure}
@@ -158,7 +163,7 @@
 	
 	The first group has only one class \code{Type(enum.Enum)}. It defines the type information like \code{Type.VOID}, \code{Type.INT}, \code{Type.FLOAT}, \code{Type.CHAR}. This type information used for translation from concrete syntax to abstract syntax, and implementation of the type checker.
 	
-	The second group has classes that define the abstract syntax information of operators. The role of this it is removing ambiguity in the concrete syntax. For example, the token \code{+} can be two different semantic in the concrete syntax, namely, binary addition operator \code{+} (eg. \code{x + y}) and unary sign operator \code{+} (eg. \code{+3.14}). The second group has the following list of classes \code{Operator(enum.Enum)}, \code{ArithOp(enum.Enum)}, \code{ComRelOp(enum.Enum)}, \code{LogicalOp(enum.Enum)}, \code{BitwiseOp(enum.Enum)}, \code{AssignOp(enum.Enum)}, and \code{MemPoinOp(enum.Enum)}.
+	The second group has classes that define the abstract syntax information of operators. The role of it is removing ambiguity in the concrete syntax. For example, the token \code{+} in concrete syntax can be has two different semantic, namely, binary addition operator \code{+} (eg. \code{x + y}) and unary sign operator \code{+} (eg. \code{+3.14}). The second group has the following list of classes \code{Operator(enum.Enum)}, \code{ArithOp(enum.Enum)}, \code{ComRelOp(enum.Enum)}, \code{LogicalOp(enum.Enum)}, \code{BitwiseOp(enum.Enum)}, \code{AssignOp(enum.Enum)}, and \code{MemPoinOp(enum.Enum)}.
 	
 	The third group has classes that define various types of node in abstract syntax tree. It contains \code{Node(object)}, \code{ID(Node)}, \code{Subscript(Node)}, \code{FunCall(Node)}, \code{Args(Node)}, \code{UnaOp(Node)}, \code{BinOp(Node)}, \code{TerOp(Node)}, \code{Assign(Node)}, \code{Expr(Node)}, \code{If(Node)}, \code{IfElse(Node)}, \code{Switch(Node)}, \code{Case(Node)}, etc.
 	
@@ -275,15 +280,76 @@
 	
 	\section{mini-C compiler}
 	
+	The mini-C compiler in ARTIDE has three different parts, namely, front end, middle end, and back end. The front end consist of three phases lexical, syntax, and semantic analysis. The middle end and back end both consist of only one phase intermediate code generation and code generation, respectively.
+	
 	\subsection{Lexical analyzer}
+	
+	The lexical analyzer uses \code{lex.py} module of the PLY library. Token specification of mini-C can be found in \code{/src/lexical\_analyzer.py}. It can covers all the tokens of ANSI-C (C89/C90).
 	
 	\subsection{Syntax analyzer}
 	
+	The syntax analyzer uses \code{yacc.py} module of the PLY library. Context sensitive grammar within BNF can be found in \code{/src/syntax\_analyzer.py}. The parsing mechnism of generated syntax analyzer is LALR(1).
+	
 	\subsection{Semantic analyzer}
+	
+	The semantic analyzer of the mini-C compiler in ARTIDE provides three different feature.
+	
+	\begin{itemize}
+		\item Construction of the symbol table and the function table.
+		
+		\item Static checking
+		
+		\begin{itemize}
+			\item While the constructing the symbol table and the function table, it check the existence of undeclared or duplicated identifier error.
+			
+			\item It also check that weather the \code{continue} and \code{break} statement are located inside loop or not.
+		\end{itemize}
+		
+		\item Type checking
+		
+		\begin{itemize}
+			\item Check the types of operands for arithmetic operators.
+			\item Check the types of destination and source element in assignment statement.
+			\item While the type checking phase, insert the proper type casting operation when it need to and possible to match the types of operands. 
+		\end{itemize}
+	\end{itemize}
 	
 	\subsection{Intermediate code generator}
 	
+	The intermediate code generator get the abstract syntax tree as its input and returns the string of intermediate code as its output. The form of intermediate code is the \emph{three address code}.	
+	
 	\subsection{Code generator}
 	
+	The code generator get the string of intermediate code as its input and returns the string of assembly code for the x86 architecture with AT\&T syntax.
+	
 	\section{mini-C debugger}
+	
+	The mini-C debugger in ARTIDE provide two different features, namely, interpreting feature and debugging feature.
+	
+	\subsection{Interpreting feature}
+	
+	Interpreting feature provides the way that interpret the input \code{.c} file as line by line. There are only one command to control the interpreting feature.
+	
+	\begin{itemize}
+		\item \code{next}
+		
+		The command \code{next} excutes a single or multiple lines(s) of the source code. For example. \code{next} just excutes current line of source code, and \code{next 10} will excute 10 lines including current line.
+	\end{itemize}
+	
+	\subsection{debugging feature}
+	
+	Debugging feature provides the helpful options for debug the input \code{.c} file. There are two commands to control the debugging feature.
+	
+	\begin{itemize}
+		\item \code{print}
+		
+		The command \code{print} provides feature that print the value contained in a variable at the moment. For example, if an integer variable \code{x} contains value \code{10}, then \code{print x} will print \code{10}.
+		
+		\item \code{trace}
+		
+		The command \code{trace} provides feature that trace the history of a variable from the beginning to the moment.
+	\end{itemize}
+	
+	\nocite{*}
+	\printbibliography
 \end{document}
