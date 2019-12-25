@@ -25,6 +25,7 @@ class code_generator:
         self.linetab = []
         self.reg_used = set()
         self.stack_pointer = [0]
+        self.label = self.new_label_generator()
 
     def new_label_generator(self):
         l = 0
@@ -35,8 +36,8 @@ class code_generator:
     def new_var(self):
         min = 1
         while True:
-            if min not in reg_used:
-                reg_used.add(min)
+            if min not in self.reg_used:
+                self.reg_used.add(min)
                 return min
             else:
                 min += 1
@@ -45,9 +46,9 @@ class code_generator:
         if reg_num is None:
             return
         elif type(reg_num) is int:
-            reg_used -= [reg_num]
+            self.reg_used -= set([reg_num])
         elif type(reg_num) is list:
-            reg_used -= reg_num
+            self.reg_used -= set(reg_num)
         elif type(reg_num) is not str:
             raise TypeError("")
 
@@ -75,7 +76,7 @@ class code_generator:
             return reg_result
         elif node.type == "ID":
             reg1 = self.new_var()
-            output("\tr{} = LOAD r{}}".format(reg1, self.symtab.get(node.get_value()).type))
+            output("\tr{} = LOAD r{}".format(reg1, self.symtab.get(node.get_value()).type))
             return reg1
         elif node.type == "ICONST" or node.type == "FCONST" or node.type == "CCONST" or node.type == "STR_LITER":
             reg = self.new_var()
@@ -196,13 +197,13 @@ class code_generator:
                 index = 1
             child = node.children[0].children[index]
             if child.type == "ID":
-                self.symtab.insert(symtab.SymTabEntry(child.get_value(), "sp [ {} ]".format(dest_reg)))
+                self.symtab.insert(symtab.SymTabEntry(child.get_value(), "sp [ {} ]\n".format(dest_reg)))
                 self.stack_pointer[-1] += 4
                 output("\tr{} := {}\n".format(dest_reg, child.get_value())); self.linetab.append(child.lineno)
             elif child.type == "ARR_DECL":
-                self.symtab.insert(symtab.SymTabEntry(child.children[0].get_value(), "sp [ {} ]".format(dest_reg)))
+                self.symtab.insert(symtab.SymTabEntry(child.children[0].get_value(), "sp [ {} ]\n".format(dest_reg)))
                 index = child.children[1].children[0].get_value()
-                self.stack_pointer[-1] += 4 * index
+                self.stack_pointer[-1] += 4 * int(index)
                 output("\tr{} := {} [ {} ]\n".format(dest_reg, child.children[0].get_value(), index)); self.linetab.append(child.children[0].lineno)
             return dest_reg
         elif node.type == "DECL_W_INIT":
@@ -213,13 +214,13 @@ class code_generator:
                 index = 1
             child = node.children[0].children[index]
             if child.type == "ID":
-                self.symtab.insert(SymTabEntry(child.get_value(), "sp {}".format(dest_reg)))
+                self.symtab.insert(SymTabEntry(child.get_value(), "sp {}\n".format(dest_reg)))
                 self.stack_pointer[-1] += 4
                 output("\trsp [ {} ] := {}\n".format(dest_reg, child.get_value())); self.linetab.append(child.lineno)
             elif child.type == "ARR_DECL":
-                self.symtab.insert(SymTabEntry(child.children[0].get_value(), "sp {}".format(dest_reg)))
+                self.symtab.insert(SymTabEntry(child.children[0].get_value(), "sp {}\n".format(dest_reg)))
                 index = child.children[1].children[0].get_value()
-                self.stack_pointer[-1] += 4 * index
+                self.stack_pointer[-1] += 4 * str(index)
                 output("\trsp [ {} ] := {} [ {} ]\n".format(dest_reg, child.children[0].get_value(), index)); self.linetab.append(child.lineno)
             # output("\tr{} = r{}\n".format(dest_reg, src_reg)); self.linetab.append(node.lineno)
             self.used_reg.remove(src_reg)
@@ -274,16 +275,15 @@ class code_generator:
                 self.remove_reg(self.generate(child, output))
         elif node.type == "COMP_STMT":
             self.symtab.insert_block_table(symtab.SymTabBlock(None))
-            output("\t<SCOPE>\n"); self.linetab.append(node.lineno)
-            output("\trsp = rsp + {}".format(self.stack_pointer[-1])); self.linetab.append(node.lineno)
-            self.stack_pointer.append(0)
+            output("\trsp = rsp + {}\n".format(self.stack_pointer[-1])); self.linetab.append(node.lineno)
+            reg_result = 0
+            self.stack_pointer.append(0); 
             for child in node.children:
                 self.remove_reg(reg_result)
                 reg_result = self.generate(child, output)
             self.symtab.remove_block_table()
             self.stack_pointer.pop()
-            output("\trsp = rsp - {}".format(self.stack_pointer[-1]))
-            output("\t<\\SCOPE>\n"); self.linetab.append(node.lineno)
+            output("\trsp = rsp - {}\n".format(self.stack_pointer[-1]))
             return reg_result
         elif node.type in _LIST_EXP_SET:
             reg_result = 0
@@ -380,7 +380,6 @@ class code_generator:
             lineno_func = node_func.children[0].lineno
             self.gototab[name_func] = l_func
             self.symtab.insert_block_table(symtab.SymTabBlock(None))
-            output("\t<SCOPE>\n"); self.linetab.append(node.lineno)
             arg_list = []
             if len(node_func.children) == 2:
                 num_param = sum(1 for i in node_func.children[1].children if len(i.children) == 2)
@@ -389,14 +388,13 @@ class code_generator:
                         param_name = param.children[1].children[-1].get_value()
                         dest_reg = self.stack_pointer[-1]
                         self.stack_pointer[-1] += 4
-                        output("\trsp [ {} ] = PARAMPOP".format(dest_reg)); self.linetab.append(node.lineno)
-                        arg_list.append([param_name, "rsp [ {} ]".format(dest_reg-num_param)])
-                        self.symtab.insert(symtab.SymTabEntry(param_name, "sp [ {} ]".format(dest_reg)))
+                        output("\trsp [ {} ] = PARAMPOP\n".format(dest_reg)); self.linetab.append(node.lineno)
+                        arg_list.append([param_name, "rsp [ {} ]\n".format(dest_reg-num_param)])
+                        self.symtab.insert(symtab.SymTabEntry(param_name, "sp [ {} ]\n".format(dest_reg)))
             self.functab[name_func] = [arg_list, lineno_func]
             result = self.generate(node.children[-1], output)
             self.symtab.remove_block_table()
             output("\tRET\n"); self.linetab.append(lineno_func)
-            output("\t<\\SCOPE>\n"); self.linetab.append(node.lineno)
             return result
         elif node.type == "EMPTY":
             pass
@@ -421,11 +419,8 @@ if __name__ == "__main__":
     type_checker = semantic_analyzer.semantic_analyzer(ast, symtab.SymTab())
     checked_ast = type_checker.check()
 
-    # intermediate_code_generator_print = intermediate_code_generator()
-    # intermediate_code_generator_print.generate(ast, print)
-
-    file = open("ic_output.txt", 'w')
-    generator_write = generator()
+    # Generate code 
+    file = open("code_output.txt", 'w')
+    code_generator_write = code_generator()
     code_generator_write.generate(checked_ast, file.write)
-    print(code_generator.reg_used)
     file.close()
