@@ -65,14 +65,14 @@ class code_generator:
             self.remove_reg([reg1, reg2])
             return reg_result
         elif node.type == "FUNCTION":
-            reg1 = self.new_var()
+            #reg1 = self.new_var()
             func_name = node.children[0].get_value().get_value()
-            output("\tr{} = {}\n".format(reg1, func_name)); self.linetab.append(node.lineno)
+            #output("\tr{} = {}\n".format(reg1, func_name)); self.linetab.append(node.lineno)
             self.remove_reg(self.generate(node.children[1].get_value(), output))
             reg_result = self.new_var()
             n = len(node.children[1].get_value().children)
-            output("\tr{} = CALL r{} {}\n".format(reg_result, reg1, n)); self.linetab.append(node.lineno)
-            self.remove_reg(reg1)
+            output("\tr{} = CALL {} {}\n".format(reg_result, func_name, n)); self.linetab.append(node.lineno)
+            #self.remove_reg(reg1)
             return reg_result
         elif node.type == "ID":
             reg1 = self.new_var()
@@ -199,13 +199,13 @@ class code_generator:
             if child.type == "ID":
                 self.symtab.insert(symtab.SymTabEntry(child.get_value(), "sp [ {} ]\n".format(dest_reg)))
                 self.stack_pointer[-1] += 4
-                output("\tr{} := {}\n".format(dest_reg, child.get_value())); self.linetab.append(child.lineno)
+                #output("\tr{} := {}\n".format(dest_reg, child.get_value())); self.linetab.append(child.lineno)
             elif child.type == "ARR_DECL":
                 self.symtab.insert(symtab.SymTabEntry(child.children[0].get_value(), "sp [ {} ]\n".format(dest_reg)))
                 index = child.children[1].children[0].get_value()
                 self.stack_pointer[-1] += 4 * int(index)
-                output("\tr{} := {} [ {} ]\n".format(dest_reg, child.children[0].get_value(), index)); self.linetab.append(child.children[0].lineno)
-            return dest_reg
+                #output("\tr{} := {} [ {} ]\n".format(dest_reg, child.children[0].get_value(), index)); self.linetab.append(child.children[0].lineno)
+            self.remove_reg(dest_reg)
         elif node.type == "DECL_W_INIT":
             dest_reg = self.stack_pointer[-1]# self.new_var()
             src_reg = self.generate(node.children[1].children[0], output)
@@ -223,7 +223,7 @@ class code_generator:
                 self.stack_pointer[-1] += 4 * str(index)
                 output("\trsp [ {} ] := {} [ {} ]\n".format(dest_reg, child.children[0].get_value(), index)); self.linetab.append(child.lineno)
             # output("\tr{} = r{}\n".format(dest_reg, src_reg)); self.linetab.append(node.lineno)
-            self.used_reg.remove(src_reg)
+            self.used_reg.remove([src_reg, dest_reg])
             #return dest_reg
         elif node.type == "STORAGE_SPEC":
             raise ValueError("STORAGE_SPEC should not called in generate")
@@ -286,7 +286,7 @@ class code_generator:
             output("\trsp = rsp - {}\n".format(self.stack_pointer[-1]))
             return reg_result
         elif node.type in _LIST_EXP_SET:
-            reg_result = 0
+            reg_result = None
             for child in node.children:
                 self.remove_reg(reg_result)
                 reg_result = self.generate(child, output)
