@@ -61,7 +61,7 @@
 	
 	\subsection{ARTIDE}
 	
-	We named our project by \emph{ARTIDE}. The word ARTIDE is an abbreviation for \emph{A Really Tiny Integrated Development Environment}. ARTIDE provide only compiler and debugger for the mini-C programming language. Since it does not provide other common options of IDE like source code editor and linker, it seem to deficiency to called by IDE. However, we choose this naming for the future development. In Italian, the word ARTIDE means the north pole of the earth. Hence, we choose polar bear as our trademark.
+	We named our project by \emph{ARTIDE}. The word ARTIDE is an abbreviation for \emph{A Really Tiny Integrated Development Environment}. ARTIDE provide only compiler and debugger for the mini-C programming language. Since it does not provide other common options of IDE like source code editor and linker, it seem to deficiency to called by IDE. However, we choose this naming for the future development. In Italian, the word ARTIDE means the north pole of the earth. Hence, we choose polar bear as our trademark. The project ARTIDE implemented by using Python programming language.
 	
 	\begin{figure}
 		\centering
@@ -133,7 +133,49 @@
 	
 	\subsection{PLY library}
 	
-	Lexical analyzer and syntax analyzer of the mini-C compiler in ARTIDE implemented by using PLY (Python Lex-Yacc) library (PLY-3.11). The PLY library has two modules \code{lex.py} and \code{yacc.py}.
+	Lexical analyzer and syntax analyzer of the mini-C compiler in ARTIDE implemented by using PLY (Python Lex-Yacc) library (PLY-3.11). The PLY library has two modules \code{lex.py} and \code{yacc.py}. In the \code{lex.py} file, there is a special class for tokenization phase called \code{LexToken}. The class \code{LexToken} has four attributes:
+	
+	\begin{itemize}
+		\item \code{self.type}
+		
+		\code{self.type} field represent the type of each token. For example, lexime \code{1234} has the token type \code{ICONST} after it tokenized.
+		
+		\item \code{self.value}
+		
+		\code{self.value} field represent the original string of each token. For example, lexime \code{1234} has the value \code{`1234'} after it tokenized.
+		
+		\item \code{self.linno}
+		
+		\code{self.lino} field represent the line number of each lexime in the source file.
+		
+		\item \code{self.lexpos}
+		
+		\code{self.lexpos} field represent the position of first charactor of each lexime relative to the start of source file.
+	\end{itemize}
+	
+	Figure \ref{fig: tokenization} shows that how the tokenization phase works. If the lexical analyzer meet \code{var = 1234;} at line 10 of source file, then it produces the tokens like \code{\code{(ID, `var', 10, 53)}}, \code{(ASSIGN, `=', 10, 57)}, \code{(ICONST, `1234', 10, 59)}, and \code{(COLON, `:', 10, 63)} with predefined matching rules for each lexime.
+	
+	\begin{figure}[ht]
+		\centering
+		\begin{tikzpicture}
+		\draw (0,3.5) rectangle (5,0);
+		\draw (0,2.5) node[anchor=west] {\textbf{ 9 }\code{$\cdots$}};
+		\draw (0,2.0) node[anchor=west] {\textbf{10 }\code{var = 1234;}};
+		\draw (0,1.5) node[anchor=west] {\textbf{11 }\code{$\cdots$}};
+		
+		\draw[->, ultra thick] (6,2) -- (7,2);
+		
+		\draw (8,3.5) rectangle (13, 0);
+		\draw (8,3.0) node[anchor=west] {\code{$\cdots$}};
+		\draw (8,2.5) node[anchor=west] {\code{(ID, `var', 10, 53)}};
+		\draw (8,2.0) node[anchor=west] {\code{(ASSIGN, `=', 10, 57)}};
+		\draw (8,1.5) node[anchor=west] {\code{(ICONST, `1234', 10, 59)}};
+		\draw (8,1.0) node[anchor=west] {\code{(COLON, `:', 10, 63)}};
+		\draw (8,0.5) node[anchor=west] {\code{$\cdots$}};
+		\end{tikzpicture}
+		\caption{Tokenization.}
+		\label{fig: tokenization}
+	\end{figure}
 	
 	\subsection{\code{node.py} module}
 	
