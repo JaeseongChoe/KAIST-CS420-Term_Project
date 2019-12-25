@@ -10,6 +10,7 @@ import lexical_analyzer
 import syntax_analyzer
 import semantic_analyzer
 import intermediate_code_generator
+import code_generator
 import symtab
 
 class RuntimeError(Exception):
@@ -349,7 +350,16 @@ def preprocess(code_dir):
 
     # Initialize semantic analyzer
     type_checker = semantic_analyzer.semantic_analyzer(ast, symtab.SymTab())
-    return interpreter_class(type_checker.check(), line_number)
+    checked_ast = type_checker.check()
+
+    # Generate code 
+    file = open("code_output.txt", 'w')
+    code_generator_write = code_generator.code_generator()
+    code_generator_write.generate(checked_ast, file.write)
+    file.close()
+
+    return interpreter_class(checked_ast, line_number)
+
 
 if __name__ == "__main__":
 
