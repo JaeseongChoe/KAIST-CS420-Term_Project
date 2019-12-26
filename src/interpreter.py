@@ -384,6 +384,8 @@ if __name__ == "__main__":
         if command_list[0] == "run":
             import sys
             interpreter.run(sys.maxsize)
+            print("")
+            input("insert any key and press enter to exit >")
             break
         elif command_list[0] == "code":
             from os import path
