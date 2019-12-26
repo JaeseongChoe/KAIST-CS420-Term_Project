@@ -35,8 +35,8 @@ class code_generator:
     def new_var(self):
         min = 1
         while True:
-            if min not in reg_used:
-                reg_used.add(min)
+            if min not in self.reg_used:
+                self.reg_used.add(min)
                 return min
             else:
                 min += 1
@@ -75,7 +75,7 @@ class code_generator:
             return reg_result
         elif node.type == "ID":
             reg1 = self.new_var()
-            output("\tr{} = LOAD r{}}".format(reg1, self.symtab.get(node.get_value()).type))
+            output("\tr{} = LOAD r{}".format(reg1, self.symtab.get(node.get_value()).type))
             return reg1
         elif node.type == "ICONST" or node.type == "FCONST" or node.type == "CCONST" or node.type == "STR_LITER":
             reg = self.new_var()
@@ -202,7 +202,7 @@ class code_generator:
             elif child.type == "ARR_DECL":
                 self.symtab.insert(symtab.SymTabEntry(child.children[0].get_value(), "sp [ {} ]".format(dest_reg)))
                 index = child.children[1].children[0].get_value()
-                self.stack_pointer[-1] += 4 * index
+                self.stack_pointer[-1] += 4 * int(index)
                 output("\tr{} := {} [ {} ]\n".format(dest_reg, child.children[0].get_value(), index)); self.linetab.append(child.children[0].lineno)
             return dest_reg
         elif node.type == "DECL_W_INIT":
@@ -219,7 +219,7 @@ class code_generator:
             elif child.type == "ARR_DECL":
                 self.symtab.insert(SymTabEntry(child.children[0].get_value(), "sp {}".format(dest_reg)))
                 index = child.children[1].children[0].get_value()
-                self.stack_pointer[-1] += 4 * index
+                self.stack_pointer[-1] += 4 * int(index)
                 output("\trsp [ {} ] := {} [ {} ]\n".format(dest_reg, child.children[0].get_value(), index)); self.linetab.append(child.lineno)
             # output("\tr{} = r{}\n".format(dest_reg, src_reg)); self.linetab.append(node.lineno)
             self.used_reg.remove(src_reg)
